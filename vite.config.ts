@@ -17,7 +17,11 @@ export default defineConfig(() => {
         output: {
           manualChunks: {
             react: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
-            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/messaging'],
+            firebaseCore: ['firebase/app'],
+            firebaseAuth: ['firebase/auth'],
+            firebaseFirestore: ['firebase/firestore'],
+            firebaseStorage: ['firebase/storage'],
+            firebaseMessaging: ['firebase/messaging'],
             charts: ['recharts'],
             pdf: ['jspdf', 'jspdf-autotable', 'html2canvas'],
             security: ['dompurify', 'qrcode'],
