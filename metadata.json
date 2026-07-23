@@ -1,0 +1,6 @@
+{
+  "name": "YZL - Travel & Consulate Services",
+  "description": "تطبيق يزل - نظام إدارة المهام والمحاسبة لخدمات السفر والقنصلية",
+  "requestFramePermissions": ["camera", "notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

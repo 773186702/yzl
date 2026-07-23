@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "بيانات مستخدمي النظام والصلاحيات",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "معرف المستخدم في Firebase" },
+        "username": { "type": "string", "description": "اسم المستخدم" },
+        "role": { "type": "string", "enum": ["admin", "staff", "agent", "accountant"], "description": "دور المستخدم" },
+        "permissions": { "type": "array", "description": "قائمة الصلاحيات التفصيلية" },
+        "biometricEnabled": { "type": "boolean", "description": "تفعيل البصمة" },
+        "fixed_tasks_ids": { "type": "array", "description": "معرفات المهام المثبتة" }
+      },
+      "required": ["uid", "username", "role", "permissions"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "بيانات العملاء والديون",
+      "type": "object",
+      "properties": {
+        "client_id": { "type": "string", "description": "معرف العميل" },
+        "name": { "type": "string", "description": "اسم العميل الكامل" },
+        "phone": { "type": "string", "description": "رقم الهاتف" },
+        "total_debt": { "type": "number", "description": "إجمالي الدين" },
+        "created_by": { "type": "string", "description": "معرف الموظف الذي أنشأ العميل" }
+      },
+      "required": ["client_id", "name", "phone"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "تفاصيل المهام والخدمات المقدمة",
+      "type": "object",
+      "properties": {
+        "task_id": { "type": "string", "description": "معرف المهمة" },
+        "client_id": { "type": "string", "description": "معرف العميل" },
+        "service_id": { "type": "string", "description": "نوع الخدمة" },
+        "created_by": { "type": "string", "description": "معرف المنشئ" },
+        "assigned_to": { "type": "string", "description": "معرف الموظف المسند إليه" },
+        "status": { "type": "string", "description": "حالة المهمة" },
+        "original_currency": { "type": "string", "enum": ["YER", "SAR", "USD"], "description": "العملة" },
+        "total_price": { "type": "number", "description": "السعر الإجمالي" },
+        "paid_amount": { "type": "number", "description": "المبلغ المدفوع" },
+        "remaining_amount": { "type": "number", "description": "المبلغ المتبقي" },
+        "payment_method": { "type": "string", "description": "طريقة الدفع" },
+        "transaction_ref": { "type": "string", "description": "مرجع المعاملة" },
+        "attachment_url": { "type": "string", "description": "رابط المرفق" },
+        "created_at": { "type": "string", "format": "date-time", "description": "تاريخ الإنشاء" },
+        "deadline": { "type": "string", "format": "date-time", "description": "موعد انتهاء المهمة" }
+      },
+      "required": ["task_id", "client_id", "total_price", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "سجل النشاطات والعمليات",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string", "description": "معرف المستخدم" },
+        "username": { "type": "string", "description": "اسم المستخدم" },
+        "action": { "type": "string", "description": "نوع العملية" },
+        "details": { "type": "string", "description": "تفاصيل العملية" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "وقت العملية" }
+      },
+      "required": ["user_id", "action", "timestamp"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "بيانات الحساب المالي",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "اسم الحساب" },
+        "balance": { "type": "number", "description": "الرصيد الحالي" },
+        "currency": { "type": "string", "description": "العملة" },
+        "color": { "type": "string", "description": "لون الحساب" },
+        "trend": { "type": "string", "description": "التوجه المالي" },
+        "last_updated": { "type": "string", "format": "date-time", "description": "تاريخ التحديث" }
+      },
+      "required": ["name", "balance", "currency"]
+    },
+    "LedgerTransaction": {
+      "title": "LedgerTransaction",
+      "description": "عملية مالية في السجل",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "نوع العملية" },
+        "title": { "type": "string", "description": "وصف العملية" },
+        "amount": { "type": "number", "description": "المبلغ" },
+        "currency": { "type": "string", "description": "العملة" },
+        "date": { "type": "string", "format": "date-time", "description": "تاريخ العملية" },
+        "account": { "type": "string", "description": "الحساب المرتبط" },
+        "created_by": { "type": "string", "description": "معرف المنشئ" }
+      },
+      "required": ["type", "title", "amount", "currency", "date", "account", "created_by"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "سجل المصروفات",
+      "type": "object",
+      "properties": {
+        "expense_id": { "type": "string", "description": "معرف المصروف" },
+        "title": { "type": "string", "description": "عنوان المصروف" },
+        "amount": { "type": "number", "description": "المبلغ" },
+        "currency": { "type": "string", "enum": ["YER", "SAR", "USD"], "description": "العملة" },
+        "source_account": { "type": "string", "description": "حساب المصدر" },
+        "date": { "type": "string", "format": "date-time", "description": "تاريخ الصرف" }
+      },
+      "required": ["expense_id", "title", "amount", "currency"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "بيانات المستخدمين" },
+    "/clients/{clientId}": { "schema": "Client", "description": "بيانات العملاء" },
+    "/tasks/{taskId}": { "schema": "Task", "description": "سجل المهام" },
+    "/expenses/{expenseId}": { "schema": "Expense", "description": "سجل المصروفات" },
+    "/audit_logs/{logId}": { "schema": "AuditLog", "description": "سجل النشاطات" },
+    "/accounts/{accountId}": { "schema": "Account", "description": "بيانات الحسابات" },
+    "/ledger_transactions/{txId}": { "schema": "LedgerTransaction", "description": "سجل المعاملات المالية" }
+  }
+}

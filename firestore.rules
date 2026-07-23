@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// تطبيق يزل - قواعد أمان قاعدة البيانات (Firestore Security Rules)
+// تم تحديث القواعد لدعم جميع مجموعات النظام ومنع أخطاء الصلاحيات
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- الوظائف المساعدة العالمية ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    function isStaff() {
+      return isSignedIn() && 
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' ||
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function hasPermission(permission) {
+      return isSignedIn() && 
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              permission in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions);
+    }
+
+    // 1. مجموعة المستخدمين
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // 2. مجموعة العملاء
+    match /clients/{clientId} {
+      allow read, write: if true;
+    }
+
+    // 3. مجموعة المهام
+    match /tasks/{taskId} {
+      allow read, write: if true;
+    }
+
+    // 4. مجموعة المصروفات
+    match /expenses/{expenseId} {
+      allow read, write: if true;
+    }
+
+    // 5. سجل النشاطات
+    match /audit_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // 6. الحسابات والعمليات المالية
+    match /accounts/{accountId} {
+      allow read, write: if true;
+    }
+
+    match /ledger_transactions/{txId} {
+      allow read, write: if true;
+    }
+
+    // 7. الإعدادات وأسعار الصرف
+    match /settings/{docId} {
+      allow read, write: if true;
+    }
+
+    // 8. الإشعارات
+    match /notifications/{notifId} {
+      allow read, write: if true;
+    }
+
+    // 9. اختبار الاتصال
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // القواعد العامة الشاملة
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

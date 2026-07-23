@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-yazal-navy: #0F2B48;
+  --color-yazal-navy-dark: #0B192C;
+  --color-yazal-navy-light: #163C66;
+  --color-yazal-cyan: #00AEEF;
+  --color-yazal-cyan-light: #00BCFF;
+  --color-yazal-bg: #F8FAFC;
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    @apply bg-yazal-bg text-yazal-navy dark:bg-yazal-navy-dark dark:text-white font-sans transition-colors duration-300;
+  }
+}
+
+.glass-effect {
+  @apply bg-white/10 backdrop-blur-xl border border-white/20;
+}
+
+.scrollbar-yazal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-yazal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-yazal::-webkit-scrollbar-thumb {
+  background-color: var(--color-yazal-cyan);
+  border-radius: 20px;
+}
+
+.scrollbar-yazal::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-yazal-navy-light);
+}
+
+.dark .scrollbar-yazal::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-yazal-cyan-light);
+}
