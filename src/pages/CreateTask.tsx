@@ -66,7 +66,7 @@ const DEFAULT_PAYMENT_GATEWAYS: PaymentGateway[] = [
  * - الماسح الضوئي لكاميرا الويب لتصوير جوازات السفر والمستندات
  */
 const CreateTask: React.FC = () => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const { language } = useApp();
 
   // خطوات إنشاء المهمة (1: البيانات والتكلفة، 2: تصوير الجواز، 3: التأكيد)
@@ -181,9 +181,9 @@ const CreateTask: React.FC = () => {
         client_name: selectedClientObj?.name || 'عميل مسجل',
         service_id: selectedServiceId,
         service_name: selectedServiceObj?.service_name_ar || 'خدمة سفر',
-        created_by: user?.username || 'الموظف الحالي',
-        created_by_employee_name: user?.username || 'الموظف الحالي',
-        assigned_to: user?.username || 'الموظف المنفذ',
+        created_by: profile?.username || 'الموظف الحالي',
+        created_by_employee_name: profile?.username || 'الموظف الحالي',
+        assigned_to: profile?.username || 'الموظف المنفذ',
         status: 'new',
         original_currency: currency,
         total_price: numPrice,

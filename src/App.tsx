@@ -42,7 +42,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />;
   }
 
-  if (user.is_active === false) {
+  if ((user as { is_active?: boolean } | null)?.is_active === false) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50">حسابك معطل حالياً. يرجى مراجعة الإدارة.</div>;
   }
 

@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Task } from '../types';
@@ -15,6 +16,7 @@ import { motion, AnimatePresence } from 'motion/react';
  * يتحقق من المهام التي تقترب من موعد الانتهاء (أقل من 24 ساعة)
  */
 const DeadlineMonitor: React.FC = () => {
+  const navigate = useNavigate();
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
   const [showNotification, setShowNotification] = useState(false);
 
@@ -93,7 +95,7 @@ const DeadlineMonitor: React.FC = () => {
           </div>
 
           <button 
-            onClick={() => window.location.href = '/tasks'}
+            onClick={() => navigate('/tasks')}
             className="w-full mt-6 bg-yazal-cyan text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs hover:bg-yazal-cyan-dark transition-all"
           >
             عرض المهام الآن

@@ -37,6 +37,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // جلب الجلسة المحفوظة مؤقتاً في حال استثناء المصادقة
   useEffect(() => {
     const checkSavedSession = async () => {
+      if (typeof window === 'undefined') return;
+
       const savedUserJson = localStorage.getItem('yazal_fallback_user');
       if (savedUserJson) {
         try {
@@ -47,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error parsing fallback user:', e);
         }
       }
+      setLoading(false);
     };
 
     // الاستماع لتغييرات حالة المصادقة مع Firebase
@@ -107,7 +110,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = (permission: string) => {
     if (!profile) return false;
     if (profile.role === 'admin') return true;
-    return profile.permissions.includes(permission);
+    const permissions = Array.isArray(profile.permissions) ? profile.permissions : [];
+    return permissions.includes(permission);
   };
 
   return (

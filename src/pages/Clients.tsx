@@ -23,7 +23,7 @@ import {
   Trash2,
   Edit
 } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, onSnapshot, where, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Client, Task } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -45,6 +45,7 @@ const Clients: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientTasks, setClientTasks] = useState<Task[]>([]);
+  const [clientDebtFromOrders, setClientDebtFromOrders] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddingModalOpen, setIsAddingModalOpen] = useState(false);
@@ -84,23 +85,38 @@ const Clients: React.FC = () => {
   useEffect(() => {
     if (!selectedClient) {
       setClientTasks([]);
+      setClientDebtFromOrders(0);
       return;
     }
 
     const tasksRef = collection(db, 'tasks');
-    const unsubscribe = onSnapshot(tasksRef, (snapshot) => {
+    const clientTasksQuery = query(tasksRef, where('client_id', '==', selectedClient.client_id));
+    const unsubscribe = onSnapshot(clientTasksQuery, (snapshot) => {
       const tasks: Task[] = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as Task;
-        if (data.client_id === selectedClient.client_id) {
-          tasks.push({ task_id: docSnap.id, ...data });
-        }
+        tasks.push({ task_id: docSnap.id, ...data });
       });
       setClientTasks(tasks);
     });
 
     return () => unsubscribe();
   }, [selectedClient]);
+
+  useEffect(() => {
+    if (!selectedClient) return;
+
+    const newDebt = clientTasks.reduce((sum, task) => sum + Number(task.remaining_amount || 0), 0);
+    setClientDebtFromOrders(newDebt);
+
+    if (selectedClient.total_debt !== newDebt) {
+      const clientRef = doc(db, 'clients', selectedClient.client_id);
+      updateDoc(clientRef, { total_debt: newDebt }).catch((err) => {
+        console.warn('Unable to sync client debt with tasks:', err);
+      });
+      setSelectedClient((prev) => prev ? { ...prev, total_debt: newDebt } : null);
+    }
+  }, [clientTasks, selectedClient]);
 
   /**
    * استيراد البيانات عبر Contact Picker API التابع للمتصفح
@@ -218,10 +234,10 @@ const Clients: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-yazal-navy dark:text-white uppercase tracking-tight">
-            {language === 'ar' ? 'سجل العملاء و CRM' : 'Client Directory & CRM'}
+            {t.client_page_title}
           </h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">
-            Yazal Master Clients Catalog • Linked Customer Accounts
+            {t.client_page_subtitle}
           </p>
         </div>
 
@@ -239,10 +255,10 @@ const Clients: React.FC = () => {
         <Search className="text-slate-400 shrink-0" size={20} />
         <input 
           type="text" 
-          placeholder={language === 'ar' ? 'ابحث باسم العميل، رقم الهاتف، أو كود CUS-XXXX...' : 'Search client name, phone, or ID...'}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-transparent outline-none font-bold text-sm text-yazal-navy dark:text-white placeholder:text-slate-400"
+          placeholder={t.client_search_placeholder}
+          className="w-full bg-transparent outline-none text-sm text-yazal-navy dark:text-white placeholder:text-slate-400"
         />
         {searchTerm && (
           <button onClick={() => setSearchTerm('')} className="p-1 text-slate-400 hover:text-slate-600">
@@ -403,10 +419,15 @@ const Clients: React.FC = () => {
                 <div className="p-6 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 flex flex-col gap-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest block">الرصيد المدين المستحق</span>
+                      <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest block">الديون المرتبطة بالطلبات المدينة</span>
                       <span className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 block">
-                        {selectedClient.total_debt.toLocaleString()} YER
+                        {clientDebtFromOrders.toLocaleString()} YER
                       </span>
+                      {selectedClient.total_debt !== clientDebtFromOrders && (
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          {`المبلغ المخزن في ملف العميل: ${Number(selectedClient.total_debt || 0).toLocaleString()} YER`}
+                        </p>
+                      )}
                     </div>
                     <DollarSign size={32} className="text-rose-400 opacity-50" />
                   </div>

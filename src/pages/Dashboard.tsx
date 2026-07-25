@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   ClipboardCheck, 
@@ -58,6 +59,7 @@ TaskRowItem.displayName = 'TaskRowItem';
 // Shows stats, recent tasks, and quick actions
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { language } = useApp();
   const t = translations[language];
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
@@ -98,7 +100,7 @@ const Dashboard: React.FC = () => {
 
   const handleQuickTask = () => {
     logActivity('إضافة سريعة', 'قام المستخدم بفتح نافذة الإضافة السريعة من لوحة التحكم');
-    window.location.href = '/tasks/new';
+    navigate('/tasks/new');
   };
 
   return (

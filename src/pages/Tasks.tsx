@@ -44,8 +44,8 @@ import { translations } from '../lib/translations';
  */
 const Tasks: React.FC = () => {
   const { language } = useApp();
-  const { user } = useAuth();
-  const t = translations[language];
+  const { user, profile } = useAuth();
+  const t = translations[language as 'ar' | 'en'];
 
   // الحالات ومجموعات البيانات
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -186,10 +186,10 @@ const Tasks: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-yazal-navy dark:text-white uppercase tracking-tight">
-            {language === 'ar' ? 'إدارة وسجل المهام المعاملات' : 'Task Operations & Ledger'}
+            {t.tasks_title}
           </h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">
-            Yazal Master Workflow Engine • Task Tracking System
+            {t.tasks_subtitle}
           </p>
         </div>
 
@@ -208,10 +208,10 @@ const Tasks: React.FC = () => {
           <Search className="text-slate-400 shrink-0" size={20} />
           <input 
             type="text" 
-            placeholder={language === 'ar' ? 'بحث برقم المعاملة، كود العميل، أو الخدمة...' : 'Search task ID, client ID, service...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent outline-none font-bold text-sm text-yazal-navy dark:text-white placeholder:text-slate-400"
+            placeholder={t.task_search_placeholder}
+            className="w-full bg-transparent outline-none text-sm text-yazal-navy dark:text-white placeholder:text-slate-400"
           />
         </div>
 
@@ -222,6 +222,7 @@ const Tasks: React.FC = () => {
             { id: 'new', label: 'جديد' },
             { id: 'processing', label: 'قيد التنفيذ' },
             { id: 'completed', label: 'مكتمل' },
+            { id: 'cancelled', label: 'ملغي' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -338,7 +339,7 @@ const Tasks: React.FC = () => {
                     </button>
 
                     {/* زر الحذف */}
-                    {user?.role === 'admin' && (
+                    {profile?.role === 'admin' && (
                       <button 
                         onClick={() => handleDeleteTask(task)}
                         title="حذف المهمة"

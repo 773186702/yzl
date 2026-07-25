@@ -75,7 +75,7 @@ const SOURCE_ACCOUNTS = [
  * تتيح تسجيل المصروفات وربطها بالخصم المباشر من الحسابات المالية المعتمدة
  */
 const Expenses: React.FC = () => {
-  const { user } = useAuth();
+  const { profile, user } = useAuth();
   const { language } = useApp();
   const t = translations[language];
 
@@ -97,6 +97,7 @@ const Expenses: React.FC = () => {
     recipient: '',
     notes: ''
   });
+  const [formTooltip, setFormTooltip] = useState<string | null>(null);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
 
   // جلب سجل المصروفات الحية من Firestore
@@ -154,7 +155,7 @@ const Expenses: React.FC = () => {
 
     if (!editingExpenseId) {
       expenseData.expense_id = expId;
-      expenseData.logged_by = user?.username || 'الموظف الحالي';
+      expenseData.logged_by = profile?.username || 'الموظف الحالي';
       expenseData.date = new Date();
     }
 
@@ -294,7 +295,7 @@ const Expenses: React.FC = () => {
           <Search className="text-slate-400 shrink-0" size={20} />
           <input 
             type="text" 
-            placeholder={language === 'ar' ? 'ابحث ببيان المصروف، حساب الخصم، أو الموظف...' : 'Search expense title, account, or staff...'}
+            placeholder={t.expense_search_placeholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-transparent outline-none font-bold text-sm text-yazal-navy dark:text-white placeholder:text-slate-400"
@@ -360,7 +361,7 @@ const Expenses: React.FC = () => {
                       #{exp.expense_id}
                     </span>
                   </div>
-                  {user?.role === 'admin' && (
+                  {profile?.role === 'admin' && (
                     <div className="flex flex-col gap-1">
                       <button 
                         onClick={() => openEditModal(exp)}
@@ -514,9 +515,16 @@ const Expenses: React.FC = () => {
                     title="اسم الشخص أو الجهة المستلمة"
                     placeholder="مثال: أحمد محمد (سائق)"
                     value={expenseForm.recipient}
+                    list="expense-recipients"
                     onChange={(e) => setExpenseForm({ ...expenseForm, recipient: e.target.value })}
                     className="w-full p-4 bg-slate-50 dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 ring-rose-500"
                   />
+                  <datalist id="expense-recipients">
+                    <option value="أحمد محمد" />
+                    <option value="سامي العنسي" />
+                    <option value="شركة الشحن" />
+                    <option value="فريق الدعم" />
+                  </datalist>
                 </div>
 
                 <div className="pt-4 flex gap-3">

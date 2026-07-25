@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Client, Task } from '../types';
-import { ArrowLeft, CreditCard, DollarSign } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 const DebtPayment: React.FC = () => {
+  const { profile } = useAuth();
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
@@ -14,6 +17,7 @@ const DebtPayment: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,28 +42,57 @@ const DebtPayment: React.FC = () => {
   }, [clientId]);
 
   const handlePay = async () => {
-    if (!paymentAmount || Number(paymentAmount) <= 0) return alert('أدخل مبلغ صحيح');
-    if (!paymentMethod) return alert('اختر طريقة الدفع');
+    if (!paymentAmount || Number(paymentAmount) <= 0) {
+      setSuccessMessage(null);
+      return alert('أدخل مبلغ صحيح');
+    }
+    if (!paymentMethod) {
+      setSuccessMessage(null);
+      return alert('اختر طريقة الدفع');
+    }
     
-    // Logic to update task and client debt
-    // For simplicity, applying to the first task
-    if (tasks.length === 0) return alert('لا توجد ديون');
-    
-    const task = tasks[0];
+    if (tasks.length === 0) return alert('لا توجد ديون للعميل.');
+
     const amount = Number(paymentAmount);
-    
+    const remainingDebt = tasks.reduce((sum, task) => sum + Math.max(0, task.remaining_amount || 0), 0);
+    if (amount > remainingDebt) {
+      return alert(`المبلغ أكبر من إجمالي الدين المتبقي: ${remainingDebt.toLocaleString()} ${tasks[0]?.original_currency || 'YER'}`);
+    }
+
+    const currency = tasks[0]?.original_currency || 'YER';
+    const confirmPayment = window.confirm(`هل تريد تأكيد سداد ${amount.toLocaleString()} ${currency} للعميل؟`);
+    if (!confirmPayment) return;
+
+    const sortedTasks = [...tasks].sort((a, b) => (a.remaining_amount || 0) - (b.remaining_amount || 0));
+    let remainingPayment = amount;
     try {
-      await updateDoc(doc(db, 'tasks', task.task_id), {
-        paid_amount: increment(amount),
-        remaining_amount: increment(-amount)
-      });
+      for (const task of sortedTasks) {
+        if (remainingPayment <= 0) break;
+        const taskRemaining = Math.max(0, task.remaining_amount || 0);
+        if (taskRemaining <= 0) continue;
+
+        const paymentForTask = Math.min(taskRemaining, remainingPayment);
+        await updateDoc(doc(db, 'tasks', task.task_id), {
+          paid_amount: increment(paymentForTask),
+          remaining_amount: increment(-paymentForTask),
+          payment_method: paymentMethod,
+          last_payment_at: new Date(),
+          updated_by_employee: profile?.username || 'unknown'
+        });
+        remainingPayment -= paymentForTask;
+      }
+
       await updateDoc(doc(db, 'clients', clientId!), {
         total_debt: increment(-amount)
       });
-      alert('تم السداد بنجاح');
+
+      setSuccessMessage('تم تسجيل السداد بنجاح.');
+      setPaymentAmount('');
+      setPaymentMethod('');
       navigate('/clients');
     } catch (err) {
-      alert('حدث خطأ');
+      console.error('Debt payment failed:', err);
+      alert('حدث خطأ أثناء إجراء السداد.');
     }
   };
 
@@ -68,6 +101,11 @@ const DebtPayment: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
+      {successMessage && (
+        <div className="rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-emerald-700 font-black">
+          {successMessage}
+        </div>
+      )}
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-slate-700">
         <ArrowLeft size={20} /> عودة
       </button>
@@ -84,25 +122,25 @@ const DebtPayment: React.FC = () => {
             <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">المبلغ المراد سداده</label>
             <input 
               type="number" 
+              inputMode="decimal"
               value={paymentAmount} 
               onChange={(e) => setPaymentAmount(e.target.value)}
               placeholder="0.00"
+              title="أدخل المبلغ الرقمي المراد سداده"
               className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-lg outline-none focus:ring-2 ring-yazal-cyan"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">طريقة الدفع</label>
-            <select 
-              value={paymentMethod} 
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-lg outline-none focus:ring-2 ring-yazal-cyan"
-            >
-              <option value="">اختر طريقة الدفع</option>
-              {paymentMethods.map(pm => (
-                <option key={pm.id} value={pm.name}>{pm.name}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              options={paymentMethods.map(pm => ({ value: pm.name, label: pm.name, sublabel: pm.type || '' }))}
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              placeholder="اختر طريقة الدفع"
+              title="ابحث واختر طريقة الدفع المفضلة"
+              allowCustom
+            />
           </div>
         </div>
         

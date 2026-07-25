@@ -125,9 +125,9 @@ export const CurrencyConverter: React.FC = () => {
       };
 
       await setDoc(rateDocRef, updatedData);
-      logActivity('تحديث أسعار الصرف', `تم تحديث أسعار الصرف: 1$ = ${editUsdYer} YER, 1 SAR = ${editSarYer} YER`);
+      logActivity(t.exchange_rates_log_title, t.exchange_rates_log_message.replace('{usd}', editUsdYer.toString()).replace('{sar}', editSarYer.toString()));
       
-      setSuccessMsg(language === 'ar' ? 'تم تحديث أسعار الصرف ومزامنتها لحظياً لجميع الموظفين!' : 'Exchange rates updated and synced live across all staff!');
+      setSuccessMsg(t.exchange_rate_sync_success);
       setTimeout(() => setSuccessMsg(null), 3500);
       setIsEditing(false);
     } catch (err) {
@@ -138,9 +138,9 @@ export const CurrencyConverter: React.FC = () => {
   };
 
   const currencyLabels = {
-    YER: { name: language === 'ar' ? 'ريال يمني' : 'Yemeni Rial', symbol: 'YER', color: 'text-amber-500' },
-    SAR: { name: language === 'ar' ? 'ريال سعودي' : 'Saudi Rial', symbol: 'SAR', color: 'text-emerald-500' },
-    USD: { name: language === 'ar' ? 'دولار أمريكي' : 'US Dollar', symbol: 'USD', color: 'text-yazal-cyan' },
+    YER: { name: t.currency_yer, symbol: 'YER', color: 'text-amber-500' },
+    SAR: { name: t.currency_sar, symbol: 'SAR', color: 'text-emerald-500' },
+    USD: { name: t.currency_usd, symbol: 'USD', color: 'text-yazal-cyan' },
   };
 
   return (
@@ -201,10 +201,10 @@ export const CurrencyConverter: React.FC = () => {
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-yazal-navy dark:text-white uppercase tracking-wider flex items-center gap-2">
                 <Sparkles size={16} className="text-yazal-cyan" />
-                {language === 'ar' ? 'تعديل أسعار الصرف الرسمية لشركة يزل للسفريات والخدمات اللوجستية' : 'Edit Official YZL Exchange Rates'}
+                {t.edit_exchange_rates_title}
               </h4>
               <span className="text-[9px] font-bold text-slate-400 uppercase">
-                {language === 'ar' ? 'مزامنة فورية لكل الموظفين' : 'Live Multi-User Broadcast'}
+                {t.live_sync_broadcast}
               </span>
             </div>
 
@@ -258,7 +258,7 @@ export const CurrencyConverter: React.FC = () => {
                 disabled={isSaving}
                 className="px-6 py-2.5 bg-yazal-cyan hover:bg-yazal-cyan-dark text-yazal-navy font-black text-xs rounded-xl uppercase tracking-wider shadow-lg shadow-yazal-cyan/20 transition-all disabled:opacity-50"
               >
-                {isSaving ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...') : t.save_rates}
+                {isSaving ? t.saving : t.save_rates}
               </button>
             </div>
           </motion.div>
@@ -276,9 +276,9 @@ export const CurrencyConverter: React.FC = () => {
               onChange={(e) => setFromCurrency(e.target.value as any)}
               className="bg-white dark:bg-yazal-navy-light border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1 text-xs font-black text-yazal-navy dark:text-white outline-none focus:ring-2 ring-yazal-cyan cursor-pointer"
             >
-              <option value="USD">USD - {language === 'ar' ? 'دولار أمريكي' : 'US Dollar'}</option>
-              <option value="SAR">SAR - {language === 'ar' ? 'ريال سعودي' : 'Saudi Rial'}</option>
-              <option value="YER">YER - {language === 'ar' ? 'ريال يمني' : 'Yemeni Rial'}</option>
+              <option value="USD">USD - {t.currency_usd}</option>
+              <option value="SAR">SAR - {t.currency_sar}</option>
+              <option value="YER">YER - {t.currency_yer}</option>
             </select>
           </div>
           <div className="flex items-baseline gap-2">
@@ -315,9 +315,9 @@ export const CurrencyConverter: React.FC = () => {
               onChange={(e) => setToCurrency(e.target.value as any)}
               className="bg-white dark:bg-yazal-navy-light border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1 text-xs font-black text-yazal-navy dark:text-white outline-none focus:ring-2 ring-yazal-cyan cursor-pointer"
             >
-              <option value="YER">YER - {language === 'ar' ? 'ريال يمني' : 'Yemeni Rial'}</option>
-              <option value="SAR">SAR - {language === 'ar' ? 'ريال سعودي' : 'Saudi Rial'}</option>
-              <option value="USD">USD - {language === 'ar' ? 'دولار أمريكي' : 'US Dollar'}</option>
+              <option value="YER">YER - {t.currency_yer}</option>
+              <option value="SAR">SAR - {t.currency_sar}</option>
+              <option value="USD">USD - {t.currency_usd}</option>
             </select>
           </div>
           <div className="flex items-baseline justify-between">

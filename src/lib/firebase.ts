@@ -61,18 +61,26 @@ export const messaging = async () => {
  */
 export const requestNotificationPermission = async () => {
   try {
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {
+      return null;
+    }
+
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+    if (!vapidKey || vapidKey.trim() === '' || vapidKey === 'YOUR_PUBLIC_VAPID_KEY_HERE') {
+      console.warn('Firebase Messaging is disabled because no valid VAPID key is configured.');
+      return null;
+    }
+
     const msg = await messaging();
     if (!msg) return null;
 
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const token = await getToken(msg, {
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY || 'YOUR_PUBLIC_VAPID_KEY_HERE'
-      });
+      const token = await getToken(msg, { vapidKey });
       return token;
     }
   } catch (error) {
-    console.error('Notification Permission Error:', error);
+    console.warn('Notification Permission Error:', error);
   }
   return null;
 };
