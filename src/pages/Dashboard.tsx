@@ -11,11 +11,13 @@ import {
   AlertCircle, 
   TrendingUp,
   Plus,
-  ArrowRight
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
 import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { translations } from '../lib/translations';
 import StatCard from '../components/StatCard';
 import { Task } from '../types';
@@ -61,6 +63,7 @@ TaskRowItem.displayName = 'TaskRowItem';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useApp();
+  const { hasPermission } = useAuth();
   const t = translations[language];
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,25 +109,31 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
       {/* قسم الترحيب (Hero Section) */}
-      <div className="bg-yazal-navy dark:bg-yazal-navy-light p-10 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl shadow-yazal-navy/20">
+      <div className="bg-yazal-navy dark:bg-yazal-navy-light p-6 sm:p-8 md:p-10 rounded-3xl md:rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl shadow-yazal-navy/20">
         <div className="absolute top-0 right-0 w-64 h-64 bg-yazal-cyan/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-right space-y-4">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
+          <div className="text-center md:text-right space-y-3 sm:space-y-4">
             <div className="flex justify-center md:justify-start">
-              <YZLOriginalLogo size={140} />
+              <YZLOriginalLogo size={80} className="sm:hidden" />
+              <YZLOriginalLogo size={100} className="hidden sm:block md:hidden" />
+              <YZLOriginalLogo size={120} className="hidden md:block" />
             </div>
-            <h1 className="text-4xl font-black tracking-tight uppercase">مرحباً بك في نظام شركة يزل للسفريات والخدمات اللوجستية</h1>
-            <p className="text-white/60 font-bold text-xs uppercase tracking-[0.3em] max-w-md leading-relaxed">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-snug sm:leading-tight">
+              مرحباً بك في نظام شركة يزل للسفريات والخدمات اللوجستية
+            </h1>
+            <p className="text-white/60 font-bold text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.3em] max-w-md leading-relaxed mx-auto md:mx-0">
               إدارة السفريات والخدمات اللوجستية المتكاملة • تحكم كامل في المهام والميزانيات
             </p>
-            <div className="pt-4">
-              <button 
-                onClick={handleQuickTask}
-                className="bg-yazal-cyan hover:bg-yazal-cyan-light text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-yazal-cyan/20 transition-all flex items-center gap-3 group"
-              >
-                إنشاء مهمة جديدة
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform rtl:rotate-180" />
-              </button>
+            <div className="pt-2 sm:pt-4 flex justify-center md:justify-start">
+              {hasPermission('edit_task') && (
+                <button 
+                  onClick={handleQuickTask}
+                  className="bg-yazal-cyan hover:bg-yazal-cyan-light text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-yazal-cyan/20 transition-all flex items-center gap-3 group"
+                >
+                  إنشاء مهمة جديدة
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+                </button>
+              )}
             </div>
           </div>
           <div className="hidden lg:block">
@@ -198,12 +207,14 @@ const Dashboard: React.FC = () => {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">متابعة سير العمل في الوقت الحقيقي</p>
             </div>
           </div>
-          <button 
-            onClick={handleQuickTask}
-            className="bg-yazal-cyan text-white p-4 rounded-2xl hover:shadow-xl transition-all active:scale-95 shadow-lg shadow-yazal-cyan/20"
-          >
-            <Plus size={20} />
-          </button>
+          {hasPermission('edit_task') && (
+            <button 
+              onClick={handleQuickTask}
+              className="bg-yazal-cyan text-white p-4 rounded-2xl hover:shadow-xl transition-all active:scale-95 shadow-lg shadow-yazal-cyan/20"
+            >
+              <Plus size={20} />
+            </button>
+          )}
         </div>
         
         <div className="overflow-x-auto">
@@ -239,13 +250,15 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Floating Action Button */}
-      <button 
-        onClick={handleQuickTask}
-        className="fixed bottom-10 right-10 w-20 h-20 bg-yazal-cyan rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-yazal-cyan/40 hover:scale-110 active:scale-90 transition-all z-50 group overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
-        <Plus size={36} />
-      </button>
+      {hasPermission('edit_task') && (
+        <button 
+          onClick={handleQuickTask}
+          className="fixed bottom-10 right-10 w-20 h-20 bg-yazal-cyan rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-yazal-cyan/40 hover:scale-110 active:scale-90 transition-all z-50 group overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
+          <Plus size={36} />
+        </button>
+      )}
     </div>
   );
 };

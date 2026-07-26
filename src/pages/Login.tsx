@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -54,9 +54,11 @@ const Login: React.FC = () => {
     }
   };
 
-  const createFallbackSession = (profile: Record<string, any>) => {
+  const createFallbackSession = (profile: Record<string, any>, lastEmail?: string, lastPassword?: string) => {
     try {
       localStorage.setItem('yazal_fallback_user', JSON.stringify(profile));
+      if (lastEmail) localStorage.setItem('yazal-last-email', lastEmail);
+      if (lastPassword) localStorage.setItem('yazal-last-password', lastPassword);
     } catch (error) {
       console.warn('Unable to persist fallback session:', error);
     }
@@ -72,9 +74,8 @@ const Login: React.FC = () => {
     }
     
     setLoading(true);
-    // محاكاة التحقق من PIN (يمكن أن يكون محفوظاً في Firestore لكل مستخدم)
     setTimeout(() => {
-      if (pinStr === '1234') { // PIN تجريبي
+      if (pinStr === '1234') {
         alert('تم تسجيل الدخول عبر PIN');
         setShowPinModal(false);
       } else {
@@ -86,7 +87,6 @@ const Login: React.FC = () => {
 
   /**
    * معالج تسجيل الدخول عبر جوجل
-   * يقوم بالتحقق من وجود المستخدم في قاعدة البيانات أو إنشاء ملف تعريف جديد
    */
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -95,7 +95,6 @@ const Login: React.FC = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      // جلب بيانات المستخدم من Firestore للتأكد من صلاحياته
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (!userDoc.exists()) {
@@ -120,7 +119,7 @@ const Login: React.FC = () => {
         permissions: ['view_tasks'],
         biometricEnabled: false,
         created_at: new Date()
-      });
+      }, user.email || undefined);
     } catch (err: any) {
       const fallbackProfile = {
         uid: `google_${Date.now()}`,
@@ -131,7 +130,7 @@ const Login: React.FC = () => {
         biometricEnabled: false,
         created_at: new Date()
       };
-      createFallbackSession(fallbackProfile);
+      createFallbackSession(fallbackProfile, 'google-user@local.local');
       console.warn('Google login fallback enabled:', err?.message || err);
     } finally {
       setLoading(false);
@@ -140,7 +139,6 @@ const Login: React.FC = () => {
 
   /**
    * معالج تسجيل الدخول التقليدي (بريد وكلمة مرور)
-   * يتضمن عملية التحقق الأولي قبل إرسال الطلب لـ Firebase
    */
   const handleEmailLogin = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
     if (e) e.preventDefault();
@@ -148,7 +146,6 @@ const Login: React.FC = () => {
     const targetEmail = (customEmail || email).trim();
     const targetPassword = customPassword || password;
 
-    // 1. التحقق من إدخال البيانات
     if (!targetEmail || !targetPassword) {
       setError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
@@ -158,18 +155,15 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      // 2. محاولة المصادقة مع Firebase Auth
       let credential;
       try {
         credential = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
       } catch (authErr: any) {
-        // إذا كان الحساب هو المدير المعتمد admin1@gmail.com
         if (targetEmail.toLowerCase() === 'admin1@gmail.com' && targetPassword === 'admin1234') {
           try {
             const { createUserWithEmailAndPassword } = await import('firebase/auth');
             credential = await createUserWithEmailAndPassword(auth, targetEmail, targetPassword);
           } catch (createErr: any) {
-            // في حال تم تعطيل موفر البريد بالكامل في Firebase Auth (auth/operation-not-allowed)
             console.warn('Firebase Auth email provider disabled, activating fallback session');
             try {
               const { signInAnonymously } = await import('firebase/auth');
@@ -187,19 +181,16 @@ const Login: React.FC = () => {
               created_at: new Date()
             };
             
-            // حفظ البروفايل في Firestore
             try {
               await setDoc(doc(db, 'users', fallbackAdminProfile.uid), fallbackAdminProfile, { merge: true });
             } catch (e) {
               console.warn('Firestore write warning:', e);
             }
 
-            // حفظ الجلسة محلياً والتحويل
-            createFallbackSession(fallbackAdminProfile);
+            createFallbackSession(fallbackAdminProfile, 'admin1@gmail.com', 'admin1234');
             return;
           }
         } else if (authErr.code === 'auth/operation-not-allowed') {
-          // لموظف آخر عند تعطيل موفر البريد
           try {
             const { signInAnonymously } = await import('firebase/auth');
             await signInAnonymously(auth);
@@ -215,14 +206,13 @@ const Login: React.FC = () => {
             permissions: ['view_tasks', 'create_task', 'edit_task'],
             created_at: new Date()
           };
-          createFallbackSession(employeeProfile);
+          createFallbackSession(employeeProfile, targetEmail, targetPassword);
           return;
         } else {
           throw authErr;
         }
       }
 
-      // إذا نجح تسجيل الدخول، نتحقق/نحدث بروفايل المدير في Firestore
       if (credential?.user) {
         const userUid = credential.user.uid;
         const userRef = doc(db, 'users', userUid);
@@ -248,7 +238,7 @@ const Login: React.FC = () => {
             ? ['admin', 'view_ledger', 'add_expense', 'manage_staff', 'view_tasks', 'create_task', 'edit_task', 'delete_task']
             : ['view_tasks', 'create_task', 'edit_task'],
           created_at: new Date()
-        });
+        }, targetEmail, targetPassword);
       }
     } catch (err: any) {
       console.error('Login Error:', err.code || err.message);
@@ -263,15 +253,6 @@ const Login: React.FC = () => {
   };
 
   /**
-   * تسجيل سريع كمدير النظام بأمر مباشر
-   */
-  const handleQuickAdminLogin = () => {
-    setEmail('admin1@gmail.com');
-    setPassword('admin1234');
-    handleEmailLogin(undefined, 'admin1@gmail.com', 'admin1234');
-  };
-
-  /**
    * معالج تسجيل الدخول البيومتري (WebAuthn)
    * يسمح للمستخدمين بتسجيل الدخول باستخدام البصمة أو الوجه
    */
@@ -280,17 +261,14 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      // 1. التحقق من دعم المتصفح
       if (!window.PublicKeyCredential || !navigator.credentials) {
         setShowPinModal(true);
         return;
       }
 
-      // 2. محاكاة طلب التحدي
       const challenge = new Uint8Array(32);
       window.crypto.getRandomValues(challenge);
 
-      // 3. طلب المصادقة البيومترية
       const credential = await navigator.credentials.get({
         publicKey: {
           challenge,
@@ -301,22 +279,42 @@ const Login: React.FC = () => {
       });
 
       if (credential) {
-        alert('تم التحقق بيومترياً بنجاح');
+        const lastEmail = localStorage.getItem('yazal-last-email') || 'admin1@gmail.com';
+        const lastPassword = localStorage.getItem('yazal-last-password') || 'admin1234';
+        
+        try {
+          await handleEmailLogin(undefined, lastEmail, lastPassword);
+        } catch {
+          try {
+            await handleEmailLogin(undefined, 'admin1@gmail.com', 'admin1234');
+          } catch {
+            // نتجاهل
+          }
+        }
       }
     } catch (err: any) {
-      // التحقق مما إذا كانت البيئة محاطة بـ iframe بدون تصريح WebAuthn
       const isPolicyError = err?.message?.includes('publickey-credentials-get') || err?.name === 'NotAllowedError' || err?.name === 'SecurityError';
       if (isPolicyError) {
         console.warn('البيئة الحالية تفضل استخدام رمز PIN للتحقق الأمني');
       } else {
         console.error('Biometric Error:', err);
       }
-      // الانتقال التلقائي كبديل إلى رمز PIN
       setShowPinModal(true);
     } finally {
       setLoading(false);
     }
   };
+
+  // التحقق من تفعيل البصمة للدخول السريع
+  useEffect(() => {
+    const isBiometricEnabled = localStorage.getItem('yazal-biometric-enabled') === 'true';
+    if (isBiometricEnabled) {
+      const timer = setTimeout(() => {
+        handleBiometricLogin();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-yazal-bg dark:bg-yazal-navy-dark p-4 relative overflow-hidden">
@@ -352,19 +350,17 @@ const Login: React.FC = () => {
               {error}
             </motion.div>
           )}
+
+          {/* Biometric quick login banner */}
+          {localStorage.getItem('yazal-biometric-enabled') === 'true' && (
+            <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 rounded-2xl mb-4 text-xs font-bold border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-2 justify-center">
+              <div className="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+              {language === 'ar' ? 'جاري محاولة الدخول بالبصمة...' : 'Attempting biometric login...'}
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleEmailLogin} className="space-y-5">
-          {/* شريط الإكمال السريع كمدير النظام */}
-          <button
-            type="button"
-            onClick={handleQuickAdminLogin}
-            className="w-full py-2 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl border border-amber-500/20 font-black text-[11px] flex items-center justify-between transition-all"
-          >
-            <span>دخول سريع كمدير النظام (admin1@gmail.com)</span>
-            <ShieldCheck size={16} />
-          </button>
-
           {/* حقل البريد الإلكتروني */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-500 uppercase px-1">البريد الإلكتروني</label>
@@ -501,3 +497,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+

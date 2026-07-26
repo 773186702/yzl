@@ -34,29 +34,7 @@ import { playTaskAlertSound } from '../lib/sound';
 import { logActivity } from '../lib/audit';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
-
-/**
- * كتالوج الخدمات الثابتة المعتمد في نظام يزل
- */
-const DEFAULT_FIXED_SERVICES: FixedService[] = [
-  { service_id: 'SRV-SCH-01', service_code: 'SCH-01', service_name_ar: 'تأشيرة شنغن الأوروبية', service_name_en: 'Schengen Tourist Visa', base_price: 350, default_currency: 'USD', category: 'تأشيرات' },
-  { service_id: 'SRV-USA-02', service_code: 'USA-02', service_name_ar: 'تأشيرة الولايات المتحدة B1/B2', service_name_en: 'US Tourist Visa B1/B2', base_price: 450, default_currency: 'USD', category: 'تأشيرات' },
-  { service_id: 'SRV-PAS-03', service_code: 'PAS-03', service_name_ar: 'تجديد جواز سفر رسمي', service_name_en: 'Passport Renewal', base_price: 120000, default_currency: 'YER', category: 'قنصلية' },
-  { service_id: 'SRV-HTL-04', service_code: 'HTL-04', service_name_ar: 'حجز فندقي وموافقات سفر', service_name_en: 'Hotel Booking & Travel Clearance', base_price: 500, default_currency: 'SAR', category: 'سفريات' },
-  { service_id: 'SRV-INV-05', service_code: 'INV-05', service_name_ar: 'استشارة وتخليص معاملة استثمار', service_name_en: 'Investment Consultation', base_price: 1000, default_currency: 'USD', category: 'استثمار' },
-];
-
-/**
- * بوابات وطرق الدفع المحلية المعتمدة
- */
-const DEFAULT_PAYMENT_GATEWAYS: PaymentGateway[] = [
-  { id: 'PAY-CASH', name_ar: 'نقد كاش (الصندوق الرئيسي)', name_en: 'Cash In Hand', type: 'cash', is_active: true },
-  { id: 'PAY-ONECASH', name_ar: 'محفظة وان كاش One Cash', name_en: 'One Cash Wallet', type: 'wallet', is_active: true },
-  { id: 'PAY-KURAIMI', name_ar: 'كريمي جوال (حساب بنكي)', name_en: 'Kuraimi Mobile', type: 'bank', is_active: true },
-  { id: 'PAY-JAWALI', name_ar: 'محفظة جوالي Jawali', name_en: 'Jawali Wallet', type: 'wallet', is_active: true },
-  { id: 'PAY-MAHFAZATI', name_ar: 'محفظتي Mahfazati', name_en: 'Mahfazati Wallet', type: 'wallet', is_active: true },
-  { id: 'PAY-TRANSFER', name_ar: 'حوالة محلية صرافة', name_en: 'Local Remittance Transfer', type: 'transfer', is_active: true },
-];
+import { ShieldAlert } from 'lucide-react';
 
 /**
  * صفحة إنشاء مهمة ومعاملة جديدة لنظام "يزل"
@@ -66,8 +44,21 @@ const DEFAULT_PAYMENT_GATEWAYS: PaymentGateway[] = [
  * - الماسح الضوئي لكاميرا الويب لتصوير جوازات السفر والمستندات
  */
 const CreateTask: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const { language } = useApp();
+
+  // التحقق من صلاحية إنشاء مهمة
+  if (!hasPermission('edit_task')) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+        <div className="bg-yazal-navy p-12 rounded-[2.5rem] text-center space-y-6">
+          <ShieldAlert size={64} className="mx-auto text-yazal-cyan" />
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">لا تملك صلاحية إنشاء معاملات جديدة</h2>
+          <p className="text-white/60 font-bold text-sm">قم بمراجعة مدير النظام لتفعيل صلاحية "تعديل المهام" لحسابك</p>
+        </div>
+      </div>
+    );
+  }
 
   // خطوات إنشاء المهمة (1: البيانات والتكلفة، 2: تصوير الجواز، 3: التأكيد)
   const [step, setStep] = useState(1);
@@ -76,15 +67,17 @@ const CreateTask: React.FC = () => {
 
   // قوائم البيانات من Firestore
   const [clientsList, setClientsList] = useState<Client[]>([]);
-  const [servicesList, setServicesList] = useState<FixedService[]>(DEFAULT_FIXED_SERVICES);
+  const [servicesList, setServicesList] = useState<FixedService[]>([]);
+  const [paymentMethodsList, setPaymentMethodsList] = useState<any[]>([]);
+  const [currenciesList, setCurrenciesList] = useState<any[]>([]);
 
   // نموذج المعاملة
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [servicePrice, setServicePrice] = useState<number | string>(0);
-  const [currency, setCurrency] = useState<'YER' | 'SAR' | 'USD' | 'EGP' | 'AED' | 'EUR' | 'GBP'>('USD');
+  const [currency, setCurrency] = useState('USD');
   const [paidAmount, setPaidAmount] = useState<number | string>(0);
-  const [paymentMethod, setPaymentMethod] = useState('نقد كاش (الصندوق الرئيسي)');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [transactionRef, setTransactionRef] = useState('');
   const [deadline, setDeadline] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
@@ -97,22 +90,60 @@ const CreateTask: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // جلب سجل العملاء لربطه بالإجبار
+  // جلب سجل العملاء والخدمات وطرق الدفع والعملات من Firestore
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       try {
-        const snap = await getDocs(collection(db, 'clients'));
+        // جلب العملاء
+        const clientsSnap = await getDocs(collection(db, 'clients'));
         const list: Client[] = [];
-        snap.forEach(d => list.push(d.data() as Client));
+        clientsSnap.forEach(d => list.push(d.data() as Client));
         setClientsList(list);
         if (list.length > 0) {
           setSelectedClientId(list[0].client_id);
         }
+
+        // جلب الخدمات من Firestore
+        const servicesSnap = await getDocs(collection(db, 'services'));
+        if (!servicesSnap.empty) {
+          const servicesData: FixedService[] = [];
+          servicesSnap.forEach(d => {
+            const data = d.data() as FixedService;
+            servicesData.push({ ...data, service_id: data.service_id || d.id });
+          });
+          setServicesList(servicesData);
+        }
+
+        // جلب طرق الدفع من Firestore
+        const paymentMethodsSnap = await getDocs(collection(db, 'payment_methods'));
+        if (!paymentMethodsSnap.empty) {
+          const methodsData: any[] = [];
+          paymentMethodsSnap.forEach(d => {
+            methodsData.push({ id: d.id, ...d.data() });
+          });
+          setPaymentMethodsList(methodsData);
+          if (methodsData.length > 0) {
+            setPaymentMethod(methodsData[0].name);
+          }
+        }
+
+        // جلب العملات من Firestore
+        const currenciesSnap = await getDocs(collection(db, 'currencies'));
+        if (!currenciesSnap.empty) {
+          const currenciesData: any[] = [];
+          currenciesSnap.forEach(d => {
+            currenciesData.push({ id: d.id, ...d.data() });
+          });
+          setCurrenciesList(currenciesData);
+          if (currenciesData.length > 0) {
+            setCurrency(currenciesData[0].code);
+          }
+        }
       } catch (err) {
-        console.warn('Clients fetch error:', err);
+        console.warn('Fetch data error:', err);
       }
     };
-    fetchClients();
+    fetchData();
   }, []);
 
   // عند اختيار خدمة، يتم قفل السعر آلياً بناء على الكتالوج
@@ -185,7 +216,7 @@ const CreateTask: React.FC = () => {
         created_by_employee_name: profile?.username || 'الموظف الحالي',
         assigned_to: profile?.username || 'الموظف المنفذ',
         status: 'new',
-        original_currency: currency,
+        original_currency: currency as any,
         total_price: numPrice,
         paid_amount: numPaid,
         remaining_amount: remainingAmount,
@@ -347,22 +378,38 @@ const CreateTask: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* طريقة الدفع والفرعية */}
+                  {/* طريقة الدفع والعملة */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">طريقة ودليل الحساب الخصمي</label>
                       <SearchableSelect
-                        options={DEFAULT_PAYMENT_GATEWAYS.map(g => ({
-                          value: g.name_ar,
-                          label: g.name_ar,
+                        options={paymentMethodsList.length > 0 ? paymentMethodsList.map(g => ({
+                          value: g.name || g.name_ar,
+                          label: g.name || g.name_ar,
                           sublabel: g.type === 'cash' ? 'نقد' : g.type === 'bank' ? 'بنكي' : 'إلكتروني'
-                        }))}
+                        })) : []}
                         value={paymentMethod}
                         onChange={setPaymentMethod}
-                        placeholder="اختر طريقة الدفع أو الحساب الوجهة..."
+                        placeholder={paymentMethodsList.length === 0 ? 'لا توجد طرق دفع، أضف من الإدارة أولاً' : 'اختر طريقة الدفع أو الحساب الوجهة...'}
                         title="اختر الطريقة التي تم الدفع بها"
                       />
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">عملة الدفع</label>
+                      <SearchableSelect
+                        options={currenciesList.length > 0 ? currenciesList.map(c => ({
+                          value: c.code,
+                          label: `${c.name} (${c.code})`,
+                          sublabel: c.code
+                        })) : []}
+                        value={currency}
+                        onChange={setCurrency}
+                        placeholder={currenciesList.length === 0 ? 'لا توجد عملات، أضف من إدارة العملات أولاً' : 'اختر العملة...'}
+                        title="اختر عملة الدفع"
+                      />
+                    </div>
+                  </div>
 
                   {/* أولوية المهمة */}
                   <div className="space-y-1">
@@ -377,7 +424,6 @@ const CreateTask: React.FC = () => {
                       <option value="high">عالية</option>
                     </select>
                   </div>
-                </div>
 
                 <button 
                   onClick={() => {

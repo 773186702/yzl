@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Shield, 
   UserPlus, 
@@ -19,7 +20,9 @@ import {
   DollarSign, 
   CreditCard, 
   Briefcase, 
-  Plus 
+  Plus,
+  Database,
+  AlertTriangle
 } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -34,6 +37,7 @@ import { logActivity } from '../lib/audit';
  * - إدارة بوابات وطرق الدفع المحلية (كريمي، وان كاش، جوالي، نقد كاش)
  */
 const Admin: React.FC = () => {
+  const navigate = useNavigate();
   // الحالات النشطة بالتبويب
   const [activeTab, setActiveTab] = useState<'users' | 'services' | 'gateways'>('users');
 
@@ -45,13 +49,8 @@ const Admin: React.FC = () => {
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'staff' });
 
-  // كتالوج الخدمات المعتمدة
-  const [services, setServices] = useState<FixedService[]>([
-    { service_id: 'SRV-SCH-01', service_code: 'SCH-01', service_name_ar: 'تأشيرة شنغن الأوروبية', service_name_en: 'Schengen Tourist Visa', base_price: 350, default_currency: 'USD', category: 'تأشيرات' },
-    { service_id: 'SRV-USA-02', service_code: 'USA-02', service_name_ar: 'تأشيرة الولايات المتحدة B1/B2', service_name_en: 'US Tourist Visa B1/B2', base_price: 450, default_currency: 'USD', category: 'تأشيرات' },
-    { service_id: 'SRV-PAS-03', service_code: 'PAS-03', service_name_ar: 'تجديد جواز سفر رسمي', service_name_en: 'Passport Renewal', base_price: 120000, default_currency: 'YER', category: 'قنصلية' },
-    { service_id: 'SRV-HTL-04', service_code: 'HTL-04', service_name_ar: 'حجز فندقي وموافقات سفر', service_name_en: 'Hotel Booking & Travel Clearance', base_price: 500, default_currency: 'SAR', category: 'سفريات' },
-  ]);
+  // كتالوج الخدمات المعتمدة (يتم جلبه من Firestore)
+  const [services, setServices] = useState<FixedService[]>([]);
   const [isAddingService, setIsAddingService] = useState(false);
   const [newService, setNewService] = useState({
     service_code: '',
@@ -82,12 +81,31 @@ const Admin: React.FC = () => {
     { id: 'add_expense', label: 'إضافة مصروفات', category: 'المالية' },
     { id: 'manage_services', label: 'إدارة كتالوج الخدمات', category: 'النظام' },
     { id: 'manage_users', label: 'إدارة المستخدمين', category: 'النظام' },
+    { id: 'manage_payment_methods', label: 'إدارة طرق الدفع', category: 'النظام' },
+    { id: 'manage_currencies', label: 'إدارة العملات', category: 'النظام' },
+    { id: 'view_dashboard', label: 'عرض لوحة التحكم', category: 'النظام' },
     { id: 'admin', label: 'مدير نظام كامل', category: 'النظام' },
   ];
 
   useEffect(() => {
     fetchUsers();
+    fetchServices();
   }, []);
+
+  const fetchServices = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'services'));
+      const servicesData = snapshot.docs.map(d => {
+        const data = d.data() as FixedService;
+        return { ...data, service_id: data.service_id || d.id };
+      });
+      if (servicesData.length > 0) {
+        setServices(servicesData);
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -176,12 +194,13 @@ const Admin: React.FC = () => {
   };
 
   /**
-   * إضافة خدمة جديدة للكتالوج المعتمد
+   * إضافة خدمة جديدة للكتالوج المعتمد وحفظها في Firestore
    */
-  const handleCreateService = (e: React.FormEvent) => {
+  const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
+    const serviceId = `SRV-${newService.service_code.toUpperCase()}`;
     const newSrv: FixedService = {
-      service_id: `SRV-${newService.service_code.toUpperCase()}`,
+      service_id: serviceId,
       service_code: newService.service_code,
       service_name_ar: newService.service_name_ar,
       service_name_en: newService.service_name_en || newService.service_name_ar,
@@ -189,9 +208,23 @@ const Admin: React.FC = () => {
       default_currency: newService.default_currency,
       category: newService.category
     };
-    setServices([...services, newSrv]);
-    setIsAddingService(false);
-    logActivity('إضافة خدمة', `تمت إضافة خدمة جديدة للكتالوج: ${newService.service_name_ar}`);
+    try {
+      await setDoc(doc(db, 'services', serviceId), newSrv);
+      setServices([...services, newSrv]);
+      setIsAddingService(false);
+      setNewService({
+        service_code: '',
+        service_name_ar: '',
+        service_name_en: '',
+        base_price: 100,
+        default_currency: 'USD' as any,
+        category: 'تأشيرات'
+      });
+      await logActivity('إضافة خدمة', `تمت إضافة خدمة جديدة للكتالوج: ${newService.service_name_ar}`);
+    } catch (error) {
+      console.error('Error creating service:', error);
+      alert('حدث خطأ أثناء إضافة الخدمة');
+    }
   };
 
   /**
@@ -212,12 +245,18 @@ const Admin: React.FC = () => {
   };
 
   /**
-   * حذف خدمة
+   * حذف خدمة من Firestore
    */
-  const handleDeleteService = (serviceId: string) => {
+  const handleDeleteService = async (serviceId: string) => {
     if (window.confirm('هل أنت متأكد من رغبتك في حذف هذه الخدمة؟')) {
-      setServices(services.filter(s => s.service_id !== serviceId));
-      logActivity('حذف خدمة', `تمت إزالة خدمة من الكتالوج`);
+      try {
+        await deleteDoc(doc(db, 'services', serviceId));
+        setServices(services.filter(s => s.service_id !== serviceId));
+        await logActivity('حذف خدمة', `تمت إزالة خدمة من الكتالوج`);
+      } catch (error) {
+        console.error('Error deleting service:', error);
+        alert('حدث خطأ أثناء حذف الخدمة');
+      }
     }
   };
 
@@ -235,35 +274,47 @@ const Admin: React.FC = () => {
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">Yazal ERP Control Center • Users & Services Catalog</p>
         </div>
 
-        {/* أزرار التبويب */}
-        <div className="flex bg-white dark:bg-yazal-navy-light p-1.5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm">
+        <div className="flex items-center gap-3">
+          {/* زر تهيئة النظام - للمدير فقط */}
           <button
-            onClick={() => setActiveTab('users')}
-            className={`px-5 py-3 rounded-xl font-black text-xs uppercase transition-all flex items-center gap-2 ${
-              activeTab === 'users' ? 'bg-yazal-navy text-white shadow-md' : 'text-slate-400 hover:text-yazal-navy dark:hover:text-white'
-            }`}
+            onClick={() => navigate('/system-reset')}
+            className="p-3 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500 rounded-2xl transition-all flex items-center gap-2"
+            title="تهيئة النظام ومسح البيانات التجريبية"
           >
-            <Shield size={16} />
-            المستخدمين والصلاحيات
+            <Database size={18} />
+            <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">تهيئة</span>
           </button>
-          <button
-            onClick={() => setActiveTab('services')}
-            className={`px-5 py-3 rounded-xl font-black text-xs uppercase transition-all flex items-center gap-2 ${
-              activeTab === 'services' ? 'bg-yazal-navy text-white shadow-md' : 'text-slate-400 hover:text-yazal-navy dark:hover:text-white'
-            }`}
-          >
-            <Briefcase size={16} />
-            الخدمات والأسعار
-          </button>
-          <button
-            onClick={() => setActiveTab('gateways')}
-            className={`px-5 py-3 rounded-xl font-black text-xs uppercase transition-all flex items-center gap-2 ${
-              activeTab === 'gateways' ? 'bg-yazal-navy text-white shadow-md' : 'text-slate-400 hover:text-yazal-navy dark:hover:text-white'
-            }`}
-          >
-            <CreditCard size={16} />
-            طرق الدفع المحلية
-          </button>
+
+          {/* أزرار التبويب */}
+          <div className="flex bg-white dark:bg-yazal-navy-light p-1.5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm">
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-5 py-3 rounded-xl font-black text-xs uppercase transition-all flex items-center gap-2 ${
+                activeTab === 'users' ? 'bg-yazal-navy text-white shadow-md' : 'text-slate-400 hover:text-yazal-navy dark:hover:text-white'
+              }`}
+            >
+              <Shield size={16} />
+              المستخدمين والصلاحيات
+            </button>
+            <button
+              onClick={() => setActiveTab('services')}
+              className={`px-5 py-3 rounded-xl font-black text-xs uppercase transition-all flex items-center gap-2 ${
+                activeTab === 'services' ? 'bg-yazal-navy text-white shadow-md' : 'text-slate-400 hover:text-yazal-navy dark:hover:text-white'
+              }`}
+            >
+              <Briefcase size={16} />
+              الخدمات والأسعار
+            </button>
+            <button
+              onClick={() => setActiveTab('gateways')}
+              className={`px-5 py-3 rounded-xl font-black text-xs uppercase transition-all flex items-center gap-2 ${
+                activeTab === 'gateways' ? 'bg-yazal-navy text-white shadow-md' : 'text-slate-400 hover:text-yazal-navy dark:hover:text-white'
+              }`}
+            >
+              <CreditCard size={16} />
+              طرق الدفع المحلية
+            </button>
+          </div>
         </div>
       </div>
 

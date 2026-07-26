@@ -5,10 +5,24 @@ import { db } from '../lib/firebase';
 import { Client, Task } from '../types';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ShieldAlert } from 'lucide-react';
 import { SearchableSelect } from '../components/SearchableSelect';
 
 const DebtPayment: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, hasPermission } = useAuth();
+  
+  // التحقق من صلاحية تعديل المهام للسداد
+  if (!hasPermission('edit_task')) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12 p-6">
+        <div className="bg-yazal-navy p-12 rounded-[2.5rem] text-center space-y-6">
+          <ShieldAlert size={64} className="mx-auto text-yazal-cyan" />
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">لا تملك صلاحية تسديد الديون</h2>
+          <p className="text-white/60 font-bold text-sm">قم بمراجعة مدير النظام لتفعيل صلاحية "تعديل المهام" لحسابك</p>
+        </div>
+      </div>
+    );
+  }
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);

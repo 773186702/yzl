@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const PaymentMethods: React.FC = () => {
+  const { hasPermission } = useAuth();
+
+  // التحقق من صلاحية إدارة طرق الدفع
+  if (!hasPermission('manage_payment_methods')) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12 p-6">
+        <div className="bg-yazal-navy p-12 rounded-[2.5rem] text-center space-y-6">
+          <ShieldAlert size={64} className="mx-auto text-yazal-cyan" />
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">لا تملك صلاحية إدارة طرق الدفع</h2>
+          <p className="text-white/60 font-bold text-sm">قم بمراجعة مدير النظام لتفعيل صلاحية "إدارة طرق الدفع" لحسابك</p>
+        </div>
+      </div>
+    );
+  }
   const [methods, setMethods] = useState<any[]>([]);
   const [newMethod, setNewMethod] = useState({ name: '', type: 'cash' });
 

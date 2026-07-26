@@ -15,6 +15,7 @@ import {
   ShieldCheck, 
   Sliders,
   Bell,
+  BellPlus,
   LogOut, 
   Sun, 
   Moon, 
@@ -23,8 +24,10 @@ import {
   X,
   DollarSign,
   CreditCard,
-  FileText
+  FileText,
+  Database
 } from 'lucide-react';
+import { requestNotificationPermission } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { translations } from '../lib/translations';
@@ -59,6 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'payment-methods', label: t.payment_methods, icon: CreditCard, path: '/payment-methods', permission: 'admin' },
     { id: 'reports', label: t.reports, icon: FileText, path: '/reports', permission: 'view_ledger' },
     { id: 'admin', label: t.admin, icon: ShieldCheck, path: '/admin', permission: 'admin' },
+    { id: 'system-reset', label: t.system_reset || 'تهيئة النظام', icon: Database, path: '/system-reset', permission: 'admin' },
     { id: 'settings', label: t.settings, icon: Sliders, path: '/settings', permission: null },
   ];
 
@@ -69,38 +73,41 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-yazal-bg dark:bg-yazal-navy-dark text-yazal-navy dark:text-white transition-colors duration-300">
       {/* Header - شريط الرأس */}
-      <header className="fixed top-0 w-full z-50 bg-yazal-navy text-white shadow-lg h-16 flex items-center px-4 md:px-8 border-b border-white/5">
+      <header className="fixed top-0 w-full z-50 bg-yazal-navy text-white shadow-lg min-h-16 py-3 flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 border-b border-white/5">
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 mr-2 md:hidden"
+          className="p-2 mr-1 md:hidden shrink-0"
         >
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <YZLOriginalLogo size={90} />
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg lg:text-xl font-black tracking-tight leading-none text-white">
+            <h1 className="text-base sm:text-lg lg:text-xl font-black tracking-tight leading-none text-white truncate">
               {t.app_name}
             </h1>
-            <p className="text-[10px] uppercase tracking-widest text-white/70 mt-1">
+            <p className="text-[10px] uppercase tracking-widest text-white/70 mt-1 truncate">
               {t.app_tagline}
             </p>
-            <div className="flex items-center bg-yazal-navy-light rounded-full px-3 py-1 gap-2 border border-white/10">
-              <button 
-                onClick={() => setLanguage('en')} 
-                className={`text-xs font-black transition-colors ${language === 'en' ? 'text-yazal-cyan' : 'text-white/60 hover:text-white'}`}
-              >
-                EN
-              </button>
-              <div className="w-px h-3 bg-white/20"></div>
-              <button 
-                onClick={() => setLanguage('ar')} 
-                className={`text-xs font-black transition-colors ${language === 'ar' ? 'text-yazal-cyan' : 'text-white/60 hover:text-white'}`}
-              >
-                عربي
-              </button>
-            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-3 ml-auto shrink-0">
+          <div className="flex items-center rounded-full bg-white/10 border border-white/10 px-2 py-1 gap-1 sm:gap-2">
+            <button 
+              onClick={() => setLanguage('en')} 
+              className={`rounded-full px-2.5 py-1 text-xs font-black transition-all ${language === 'en' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
+            >
+              EN
+            </button>
+            <div className="w-px h-3 bg-white/20"></div>
+            <button 
+              onClick={() => setLanguage('ar')} 
+              className={`rounded-full px-2.5 py-1 text-xs font-black transition-all ${language === 'ar' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
+            >
+              عربي
+            </button>
           </div>
 
           <Link
@@ -115,9 +122,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <button 
             onClick={toggleTheme}
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            title={theme === 'light' ? t.dark_mode : t.light_mode}
+            title={theme === 'dark' ? t.dark_mode : t.light_mode}
           >
-            {theme === 'light' ? <Moon size={20} className="text-yazal-cyan" /> : <Sun size={20} className="text-amber-400" />}
+            {theme === 'dark' ? <Moon size={20} className="text-yazal-cyan" /> : <Sun size={20} className="text-amber-400" />}
           </button>
 
           <button 
@@ -126,6 +133,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             title={t.logout}
           >
             <LogOut size={20} />
+          </button>
+          
+          {/* زر تفعيل الإشعارات */}
+          <button
+            onClick={() => { requestNotificationPermission(); }}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            title={t.enable_notifications_header || 'تفعيل الإشعارات'}
+          >
+            <BellPlus size={20} className="text-yazal-cyan" />
           </button>
         </div>
       </header>
@@ -142,6 +158,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <nav className="p-4 space-y-2 flex-1 overflow-y-auto scrollbar-yazal pb-24">
               <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-400 mb-1">
                 {t.main_navigation}
+
               </div>
               {menuItems.map((item) => {
                 if (item.permission && !hasPermission(item.permission)) return null;

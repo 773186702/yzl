@@ -29,6 +29,7 @@ import { Client, Task } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { logActivity } from '../lib/audit';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { translations } from '../lib/translations';
 
 /**
@@ -39,6 +40,7 @@ import { translations } from '../lib/translations';
  */
 const Clients: React.FC = () => {
   const { language } = useApp();
+  const { hasPermission } = useAuth();
   const t = translations[language];
 
   // حالات الصفحة والرئيسيات
@@ -241,13 +243,15 @@ const Clients: React.FC = () => {
           </p>
         </div>
 
-        <button 
-          onClick={() => setIsAddingModalOpen(true)}
-          className="bg-yazal-cyan hover:bg-yazal-cyan-dark text-yazal-navy font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-yazal-cyan/20 transition-all active:scale-95 uppercase tracking-widest text-xs self-start md:self-auto"
-        >
-          <UserPlus size={20} />
-          {t.add_client}
-        </button>
+        {hasPermission('add_client') && (
+          <button 
+            onClick={() => setIsAddingModalOpen(true)}
+            className="bg-yazal-cyan hover:bg-yazal-cyan-dark text-yazal-navy font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-yazal-cyan/20 transition-all active:scale-95 uppercase tracking-widest text-xs self-start md:self-auto"
+          >
+            <UserPlus size={20} />
+            {t.add_client}
+          </button>
+        )}
       </div>
 
       {/* شريط البحث وتصفية العملاء */}
@@ -365,23 +369,27 @@ const Clients: React.FC = () => {
                   <X size={20} />
                 </button>
                 <div className="absolute top-6 right-6 flex items-center gap-2">
-                  <button 
-                    onClick={() => {
-                      setSelectedClient(null);
-                      openEditModal(selectedClient);
-                    }}
-                    title="تعديل بيانات العميل"
-                    className="p-2 bg-white/10 hover:bg-yazal-cyan hover:text-yazal-navy rounded-xl text-white transition-all"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteClient(selectedClient.client_id)}
-                    title="حذف العميل"
-                    className="p-2 bg-white/10 hover:bg-rose-500 hover:text-white rounded-xl text-white transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  {hasPermission('edit_client') && (
+                    <button 
+                      onClick={() => {
+                        setSelectedClient(null);
+                        openEditModal(selectedClient);
+                      }}
+                      title="تعديل بيانات العميل"
+                      className="p-2 bg-white/10 hover:bg-yazal-cyan hover:text-yazal-navy rounded-xl text-white transition-all"
+                    >
+                      <Edit size={18} />
+                    </button>
+                  )}
+                  {hasPermission('delete_task') && (
+                    <button 
+                      onClick={() => handleDeleteClient(selectedClient.client_id)}
+                      title="حذف العميل"
+                      className="p-2 bg-white/10 hover:bg-rose-500 hover:text-white rounded-xl text-white transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </div>
                 <div className="w-16 h-16 rounded-2xl bg-yazal-cyan text-yazal-navy font-black text-2xl flex items-center justify-center mb-4 shadow-lg">
                   {selectedClient.name.charAt(0).toUpperCase()}

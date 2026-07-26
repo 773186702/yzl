@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { translations } from '../lib/translations';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -13,7 +15,21 @@ interface ReportData {
 
 const Reports: React.FC = () => {
   const { language } = useApp();
+  const { hasPermission } = useAuth();
   const t = translations[language];
+
+  // التحقق من صلاحية view_ledger للتقارير
+  if (!hasPermission('view_ledger')) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+        <div className="bg-yazal-navy p-12 rounded-[2.5rem] text-center space-y-6">
+          <ShieldAlert size={64} className="mx-auto text-yazal-cyan" />
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">لا تملك صلاحية الوصول إلى التقارير</h2>
+          <p className="text-white/60 font-bold text-sm">قم بمراجعة مدير النظام لتفعيل صلاحية "عرض السجل المالي" لحسابك</p>
+        </div>
+      </div>
+    );
+  }
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);

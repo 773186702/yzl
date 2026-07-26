@@ -44,7 +44,7 @@ import { translations } from '../lib/translations';
  */
 const Tasks: React.FC = () => {
   const { language } = useApp();
-  const { user, profile } = useAuth();
+  const { user, profile, hasPermission } = useAuth();
   const t = translations[language as 'ar' | 'en'];
 
   // الحالات ومجموعات البيانات
@@ -306,19 +306,21 @@ const Tasks: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* أزرار الإجراءات والشير */}
+                    {/* أزرار الإجراءات والشير */}
                   <div className="flex items-center gap-2">
-                    {/* خيارات الحالة */}
-                    <select 
-                      value={task.status}
-                      onChange={(e) => handleStatusChange(task.task_id, e.target.value as Task['status'])}
-                      className="p-2.5 bg-slate-100 dark:bg-yazal-navy-dark font-black text-xs rounded-xl text-yazal-navy dark:text-white border-none outline-none focus:ring-2 ring-yazal-cyan cursor-pointer"
-                    >
-                      <option value="new">جديد</option>
-                      <option value="processing">قيد التنفيذ</option>
-                      <option value="completed">مكتمل</option>
-                      <option value="cancelled">ملغي</option>
-                    </select>
+                    {/* خيارات الحالة - يحتاج صلاحية تعديل المهام */}
+                    {hasPermission('edit_task') && (
+                      <select 
+                        value={task.status}
+                        onChange={(e) => handleStatusChange(task.task_id, e.target.value as Task['status'])}
+                        className="p-2.5 bg-slate-100 dark:bg-yazal-navy-dark font-black text-xs rounded-xl text-yazal-navy dark:text-white border-none outline-none focus:ring-2 ring-yazal-cyan cursor-pointer"
+                      >
+                        <option value="new">جديد</option>
+                        <option value="processing">قيد التنفيذ</option>
+                        <option value="completed">مكتمل</option>
+                        <option value="cancelled">ملغي</option>
+                      </select>
+                    )}
 
                     {/* زر الفاتورة كود QR */}
                     <button 
@@ -338,8 +340,8 @@ const Tasks: React.FC = () => {
                       <MessageSquare size={18} />
                     </button>
 
-                    {/* زر الحذف */}
-                    {profile?.role === 'admin' && (
+                    {/* زر الحذف - يحتاج صلاحية حذف المهام */}
+                    {(profile?.role === 'admin' || hasPermission('delete_task')) && (
                       <button 
                         onClick={() => handleDeleteTask(task)}
                         title="حذف المهمة"

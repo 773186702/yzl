@@ -22,6 +22,8 @@ import PaymentMethods from './pages/PaymentMethods';
 import Reports from './pages/Reports';
 import DebtPayment from './pages/DebtPayment';
 import Notifications from './pages/Notifications';
+import SystemReset from './pages/SystemReset';
+import ChangePassword from './pages/ChangePassword';
 
 /**
  * مكون حماية الملاحة المسارات (Protected Route Component)
@@ -132,6 +134,18 @@ export default function App() {
             <Route path="/debt-payment/:clientId" element={
               <ProtectedRoute>
                 <DebtPayment />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/system-reset" element={
+              <ProtectedRoute>
+                <SystemReset />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/change-password" element={
+              <ProtectedRoute>
+                <ChangePassword />
               </ProtectedRoute>
             } />
 

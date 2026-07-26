@@ -74,7 +74,7 @@ export async function exportFinancialReportPDF(accounts: AccountData[], transact
     <div style="border: 2px solid #0f2b48; border-radius: 20px; padding: 25px; background: #fafbfc;">
       <div style="display: flex; justify-content: space-between; items-align: center; border-bottom: 2px solid #00d2d3; padding-bottom: 15px; margin-bottom: 20px;">
         <div>
-          <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #0f2b48; letter-spacing: -0.5px;">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #0f2b48; letter-spacing: normal; word-spacing: normal;">
             شركة يزل للسفريات والخدمات اللوجستية
           </h1>
           <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: 700; color: #00d2d3; text-transform: uppercase;">
@@ -187,7 +187,7 @@ export async function exportCompletedTasksArabicPDF(tasks: CompletedTaskData[]):
     <div style="border: 2px solid #0f2b48; border-radius: 20px; padding: 25px; background: #fafbfc;">
       <div style="display: flex; justify-content: space-between; items-align: center; border-bottom: 2px solid #00d2d3; padding-bottom: 15px; margin-bottom: 20px;">
         <div>
-          <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #0f2b48; letter-spacing: -0.5px;">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #0f2b48; letter-spacing: normal; word-spacing: normal;">
             شركة يزل للسفريات والخدمات اللوجستية
           </h1>
           <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: 700; color: #00d2d3; text-transform: uppercase;">
@@ -312,7 +312,7 @@ export async function exportArabicInvoicePDF(data: InvoicePDFData): Promise<void
       <!-- الهيدر والترويسة الرسمية -->
       <div style="display: flex; justify-content: space-between; items-align: center; border-bottom: 2px solid #00d2d3; padding-bottom: 15px; margin-bottom: 20px;">
         <div>
-          <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #0f2b48; letter-spacing: -0.5px;">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #0f2b48; letter-spacing: normal; word-spacing: normal;">
             شركة يزل للسفريات والخدمات اللوجستية
           </h1>
           <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: 700; color: #00d2d3; text-transform: uppercase;">

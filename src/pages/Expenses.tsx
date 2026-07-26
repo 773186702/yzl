@@ -75,7 +75,7 @@ const SOURCE_ACCOUNTS = [
  * تتيح تسجيل المصروفات وربطها بالخصم المباشر من الحسابات المالية المعتمدة
  */
 const Expenses: React.FC = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, hasPermission } = useAuth();
   const { language } = useApp();
   const t = translations[language];
 
@@ -247,13 +247,15 @@ const Expenses: React.FC = () => {
           </p>
         </div>
 
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-rose-500 hover:bg-rose-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20 transition-all active:scale-95 uppercase tracking-widest text-xs self-start md:self-auto"
-        >
-          <Plus size={20} />
-          {t.add_expense}
-        </button>
+        {hasPermission('add_expense') && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-rose-500 hover:bg-rose-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20 transition-all active:scale-95 uppercase tracking-widest text-xs self-start md:self-auto"
+          >
+            <Plus size={20} />
+            {t.add_expense}
+          </button>
+        )}
       </div>
 
       {/* كروت الإجماليات حسب العملات */}
@@ -361,22 +363,26 @@ const Expenses: React.FC = () => {
                       #{exp.expense_id}
                     </span>
                   </div>
-                  {profile?.role === 'admin' && (
+                  {(profile?.role === 'admin' || hasPermission('add_expense') || hasPermission('delete_task')) && (
                     <div className="flex flex-col gap-1">
-                      <button 
-                        onClick={() => openEditModal(exp)}
-                        title="تعديل المصروف"
-                        className="p-1.5 text-slate-400 hover:text-yazal-cyan hover:bg-yazal-cyan/10 dark:hover:bg-yazal-cyan/20 rounded-xl transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                      </button>
-                      <button 
-                        onClick={() => { setDeleteTargetId(exp.expense_id); setIsConfirmModalOpen(true); }}
-                        title="حذف المصروف"
-                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {hasPermission('add_expense') && (
+                        <button 
+                          onClick={() => openEditModal(exp)}
+                          title="تعديل المصروف"
+                          className="p-1.5 text-slate-400 hover:text-yazal-cyan hover:bg-yazal-cyan/10 dark:hover:bg-yazal-cyan/20 rounded-xl transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        </button>
+                      )}
+                      {hasPermission('delete_task') && (
+                        <button 
+                          onClick={() => { setDeleteTargetId(exp.expense_id); setIsConfirmModalOpen(true); }}
+                          title="حذف المصروف"
+                          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

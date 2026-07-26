@@ -16,9 +16,11 @@ import {
   TrendingDown, 
   PieChart as PieIcon, 
   BarChart as BarIcon, 
-  Calendar 
+  Calendar,
+  ShieldAlert
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { translations } from '../lib/translations';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Skeleton, CardSkeleton } from '../components/Skeleton';
@@ -108,6 +110,7 @@ TransactionItemRow.displayName = 'TransactionItemRow';
 
 const Ledger: React.FC = () => {
   const { language } = useApp();
+  const { hasPermission } = useAuth();
   const t = translations[language];
   const [currency, setCurrency] = useState<'YER' | 'SAR' | 'USD'>('YER');
   const [loading, setLoading] = useState(true);
@@ -221,6 +224,19 @@ const Ledger: React.FC = () => {
     await exportCompletedTasksArabicPDF(taskData);
     logActivity('تصدير تقرير المهام المكتملة', 'قام المستخدم بتصدير تقرير رسمي بالمهام المكتملة بصيغة PDF');
   }, []);
+
+  // التحقق من صلاحية view_ledger
+  if (!hasPermission('view_ledger')) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+        <div className="bg-yazal-navy p-12 rounded-[2.5rem] text-center space-y-6">
+          <ShieldAlert size={64} className="mx-auto text-yazal-cyan" />
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">لا تملك صلاحية الوصول إلى السجل المالي</h2>
+          <p className="text-white/60 font-bold text-sm">قم بمراجعة مدير النظام لتفعيل صلاحية "عرض السجل المالي" لحسابك</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

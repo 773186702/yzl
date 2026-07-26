@@ -9,6 +9,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { initMessaging } from '../lib/firebase-messaging';
+import { requestNotificationPermission } from '../lib/firebase';
 
 // سياق المصادقة (Auth Context)
 // Manages Firebase Auth state and user profile from Firestore
@@ -58,6 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(firebaseUser);
         // تهيئة الإشعارات
         initMessaging();
+        
+        // طلب الإذن للإشعارات تلقائياً بعد تسجيل الدخول
+        setTimeout(async () => {
+          try {
+            await requestNotificationPermission();
+          } catch (e) {
+            console.warn('Auto notification permission request skipped:', e);
+          }
+        }, 3000);
         
         // جلب ملف تعريف المستخدم من Firestore
         try {
