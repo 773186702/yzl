@@ -25,7 +25,8 @@ import {
   DollarSign,
   CreditCard,
   FileText,
-  Database
+  Database,
+  User
 } from 'lucide-react';
 import { requestNotificationPermission } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -111,6 +112,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <Link
+            to="/profile"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            title={t.profile || 'الملف الشخصي'}
+          >
+            <User size={20} />
+          </Link>
+
+          <Link
             to="/notifications"
             className="p-2 hover:bg-white/10 rounded-full transition-colors relative"
             title={t.notifications}
@@ -176,8 +185,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
             </nav>
             
-            <div className="absolute bottom-0 w-full p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-yazal-navy-dark/30">
-              <div className="flex items-center gap-3 p-3 bg-white dark:bg-yazal-navy-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+            <Link to="/profile" className="absolute bottom-0 w-full p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-yazal-navy-dark/30">
+              <div className="flex items-center gap-3 p-3 bg-white dark:bg-yazal-navy-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-sm hover:bg-yazal-cyan/5 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-yazal-navy dark:bg-yazal-navy-light border-2 border-yazal-cyan overflow-hidden flex items-center justify-center shrink-0">
                   <div className="w-full h-full bg-yazal-cyan/20 flex items-center justify-center text-yazal-cyan font-black text-sm">
                     {(profile?.username || auth.currentUser?.email || 'Y').charAt(0).toUpperCase()}
@@ -188,11 +197,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {profile?.username || auth.currentUser?.email?.split('@')[0] || t.default_staff_name}
                   </p>
                   <p className="text-[10px] font-bold text-yazal-cyan mt-1 truncate uppercase tracking-wider">
-                    {profile?.role ? (profile.role === 'admin' ? t.system_admin : profile.role) : t.active_staff_account}
+                    {profile?.role === 'admin' ? t.system_admin :
+                     profile?.role === 'accountant' ? (language === 'ar' ? 'محاسب' : 'Accountant') :
+                     profile?.role === 'agent' ? (language === 'ar' ? 'مندوب' : 'Agent') :
+                     profile?.role ? (language === 'ar' ? 'موظف' : 'Staff') : t.active_staff_account}
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
           </motion.aside>
         )}
       </AnimatePresence>

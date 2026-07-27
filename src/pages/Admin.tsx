@@ -22,10 +22,12 @@ import {
   Briefcase, 
   Plus,
   Database,
-  AlertTriangle
+  AlertTriangle,
+  Loader
 } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../lib/firebase';
 import { UserProfile, FixedService, PaymentGateway, ALL_PERMISSIONS_LIST, ROLE_PERMISSION_PRESETS } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { logActivity } from '../lib/audit';
@@ -110,21 +112,25 @@ const Admin: React.FC = () => {
   };
 
   /**
-   * إنشاء مستخدم جديد وتسجيله بـ Firestore مع الصلاحيات المسبقة
+   * إنشاء مستخدم جديد وتسجيله بـ Firebase Auth + Firestore مع الصلاحيات المسبقة
    */
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const tempId = Math.random().toString(36).substring(7);
-      const userRef = doc(db, 'users', tempId);
+      // 1. إنشاء المستخدم في Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password);
+      const firebaseUid = userCredential.user.uid;
+      
+      // 2. حفظ المستخدم في Firestore مع البيانات والصلاحيات
+      const userRef = doc(db, 'users', firebaseUid);
       
       // تحديد الصلاحيات حسب قالب الدور المختار
       const rolePreset = selectedPreset as keyof typeof ROLE_PERMISSION_PRESETS;
       const presetPermissions = ROLE_PERMISSION_PRESETS[rolePreset] || ROLE_PERMISSION_PRESETS.staff;
       
       const profile: UserProfile = {
-        uid: tempId,
+        uid: firebaseUid,
         username: newUser.username,
         email: newUser.email,
         role: newUser.role as any,
@@ -139,8 +145,15 @@ const Admin: React.FC = () => {
       setIsAddingUser(false);
       setNewUser({ username: '', email: '', password: '', role: 'staff' });
       setSelectedPreset('staff');
-    } catch (error) {
-      alert('حدث خطأ أثناء إنشاء المستخدم');
+      alert(`✅ تم إنشاء المستخدم ${newUser.username} بنجاح في Firebase Auth! يمكنه الآن تسجيل الدخول باستخدام البريد الإلكتروني وكلمة المرور.`);
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
+        alert('❌ البريد الإلكتروني مستخدم بالفعل في النظام');
+      } else if (error.code === 'auth/weak-password') {
+        alert('❌ كلمة المرور ضعيفة جداً (يجب أن تكون 6 أحرف على الأقل)');
+      } else {
+        alert('❌ حدث خطأ أثناء إنشاء المستخدم: ' + (error.message || ''));
+      }
     } finally {
       setLoading(false);
     }

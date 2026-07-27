@@ -10,7 +10,7 @@ import {
   CalendarDays, Search, X, Printer, Wallet, Receipt,
   CreditCard, ArrowUpRight, ArrowDownRight, Filter,
   PieChart, CheckCircle, Clock, AlertCircle, ChevronDown,
-  ChevronUp, Eye
+  ChevronUp, Eye, FileDown
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,11 @@ import { UserProfile, Task, Client } from '../types';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { motion, AnimatePresence } from 'motion/react';
 import { logActivity } from '../lib/audit';
+import { 
+  exportEmployeeStatementPDF, 
+  exportClientStatementPDF, 
+  exportReportPDF 
+} from '../lib/pdfExporter';
 
 interface ReportResult {
   title: string;
@@ -635,15 +640,58 @@ const Reports: React.FC = () => {
                 placeholder="ابحث عن موظف..."
                 title="اختر الموظف لعرض كشف حسابه"
               />
-              {hasPermission('view_financial_reports') && (
+              <div className="flex gap-3">
+                {hasPermission('view_financial_reports') && (
+                  <button
+                    onClick={generateEmployeeReport}
+                    disabled={!selectedEmployeeId}
+                    className="flex-1 p-4 bg-gradient-to-l from-teal-500 to-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg disabled:opacity-50 hover:brightness-110 transition-all"
+                  >
+                    عرض كشف الحساب
+                  </button>
+                )}
                 <button
-                  onClick={generateEmployeeReport}
+                  onClick={async () => {
+                    if (!selectedEmployeeId) return;
+                    const employee = employees.find(e => e.uid === selectedEmployeeId);
+                    if (!employee) return;
+                    const empName = employee?.username || selectedEmployeeId;
+                    const tasksSnap = await getDocs(collection(db, 'tasks'));
+                    const tasks = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+                    const employeeTasks = tasks.filter(t => t.assigned_to === empName || t.created_by === empName);
+                    const expensesSnap = await getDocs(query(collection(db, 'expenses'), orderBy('date', 'desc')));
+                    const expensesList = expensesSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+                    const employeeExpenses = expensesList.filter(e => e.employee_name === empName);
+                    const totalRevenue = employeeTasks.reduce((sum, t) => sum + Number(t.paid_amount || 0), 0);
+                    const totalExpenses = employeeExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                    const totalTasks = employeeTasks.reduce((sum, t) => sum + Number(t.total_price || 0), 0);
+                    const totalDebt = employeeTasks.reduce((sum, t) => sum + Number(t.remaining_amount || 0), 0);
+                    
+                    const transactions = [
+                      ...employeeTasks.map((t: any) => ({ type: 'task' as const, description: `${t.service_name || t.service_id} - ${t.client_name || t.client_id}`, date: t.created_at?.toDate?.()?.toLocaleDateString('ar-EG') || '-', amount: Number(t.total_price || 0) })),
+                      ...employeeExpenses.map((e: any) => ({ type: 'expense' as const, description: e.title || e.description || '-', date: e.date?.toDate?.()?.toLocaleDateString('ar-EG') || '-', amount: Number(e.amount || 0) }))
+                    ];
+                    
+                    await exportEmployeeStatementPDF({
+                      employeeName: empName,
+                      employeeRole: employee?.role || 'Staff',
+                      period: `${dateRange.from || 'الكل'} → ${dateRange.to || 'الكل'}`,
+                      totalTasks: employeeTasks.length,
+                      totalRevenue,
+                      totalExpenses,
+                      totalWithdrawals: 0,
+                      totalClientDebts: totalDebt,
+                      netBalance: totalRevenue - totalExpenses,
+                      transactions
+                    });
+                  }}
                   disabled={!selectedEmployeeId}
-                  className="w-full p-4 bg-gradient-to-l from-teal-500 to-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg disabled:opacity-50 hover:brightness-110 transition-all"
+                  className="p-4 bg-white dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 text-yazal-navy dark:text-white rounded-2xl font-black hover:bg-slate-50 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                  title="تصدير PDF"
                 >
-                  عرض كشف الحساب
+                  <FileDown size={20} />
                 </button>
-              )}
+              </div>
             </div>
           </div>
 
@@ -670,13 +718,53 @@ const Reports: React.FC = () => {
                 placeholder="ابحث عن عميل..."
                 title="اختر العميل لعرض كشف حسابه"
               />
-              <button
-                onClick={generateClientDetailedReport}
-                disabled={!selectedClientId}
-                className="w-full p-4 bg-gradient-to-l from-sky-500 to-sky-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg disabled:opacity-50 hover:brightness-110 transition-all"
-              >
-                عرض كشف الحساب
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={generateClientDetailedReport}
+                  disabled={!selectedClientId}
+                  className="flex-1 p-4 bg-gradient-to-l from-sky-500 to-sky-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg disabled:opacity-50 hover:brightness-110 transition-all"
+                >
+                  عرض كشف الحساب
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!selectedClientId) return;
+                    const client = clients.find(c => c.client_id === selectedClientId);
+                    if (!client) return;
+                    const tasksSnap = await getDocs(collection(db, 'tasks'));
+                    const tasks = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+                    const clientTasks = tasks.filter((t: any) => t.client_id === selectedClientId);
+                    const totalServices = clientTasks.reduce((sum: number, t: any) => sum + Number(t.total_price || 0), 0);
+                    const totalPaid = clientTasks.reduce((sum: number, t: any) => sum + Number(t.paid_amount || 0), 0);
+                    const totalRemaining = clientTasks.reduce((sum: number, t: any) => sum + Number(t.remaining_amount || 0), 0);
+                    
+                    await exportClientStatementPDF({
+                      clientName: client.name,
+                      clientId: client.client_id,
+                      clientPhone: client.phone || '',
+                      clientPassport: client.passport_no,
+                      period: `${dateRange.from || 'الكل'} → ${dateRange.to || 'الكل'}`,
+                      totalServices,
+                      totalPaid,
+                      totalRemaining,
+                      transactions: clientTasks.map((t: any) => ({
+                        taskId: t.task_id || t.id,
+                        serviceName: t.service_name || t.service_id,
+                        date: t.created_at?.toDate?.()?.toLocaleDateString('ar-EG') || '-',
+                        status: t.status,
+                        totalPrice: Number(t.total_price || 0),
+                        paidAmount: Number(t.paid_amount || 0),
+                        remainingAmount: Number(t.remaining_amount || 0)
+                      }))
+                    });
+                  }}
+                  disabled={!selectedClientId}
+                  className="p-4 bg-white dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 text-yazal-navy dark:text-white rounded-2xl font-black hover:bg-slate-50 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                  title="تصدير PDF"
+                >
+                  <FileDown size={20} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -712,6 +800,27 @@ const Reports: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (reportResult) {
+                      exportReportPDF({
+                        title: reportResult.title,
+                        period: `${dateRange.from || 'الكل'} → ${dateRange.to || 'الكل'}`,
+                        summaryCards: reportResult.summaryCards.map(c => ({
+                          label: c.label,
+                          value: c.value,
+                          color: c.color.replace('text-', '#')
+                        })),
+                        headers: reportResult.headers,
+                        rows: reportResult.rows
+                      });
+                    }
+                  }}
+                  className="p-3 bg-yazal-navy text-white rounded-2xl hover:bg-yazal-navy-light transition-all"
+                  title="تصدير PDF"
+                >
+                  <FileDown size={20} />
+                </button>
                 <button
                   onClick={() => downloadCSV(reportResult)}
                   className="p-3 bg-slate-100 dark:bg-white/5 rounded-2xl text-slate-500 hover:text-yazal-cyan transition-all"

@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  ShieldAlert
+  ShieldAlert,
+  UserCheck
 } from 'lucide-react';
 import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -76,23 +77,41 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const path = 'tasks';
       try {
         // جلب المهام الأخيرة
-        const tasksQuery = query(collection(db, path), orderBy('created_at', 'desc'), limit(5));
+        const tasksQuery = query(collection(db, 'tasks'), orderBy('created_at', 'desc'), limit(5));
         const tasksSnap = await getDocs(tasksQuery);
         const tasksList = tasksSnap.docs.map(doc => ({ task_id: doc.id, ...doc.data() } as Task));
         setRecentTasks(tasksList);
 
-        // جلب إحصائيات سريعة (تجريبية للمعاينة)
+        // جلب جميع المهام للإحصائيات
+        const allTasksSnap = await getDocs(collection(db, 'tasks'));
+        const allTasks = allTasksSnap.docs.map(doc => doc.data() as Task);
+        const completedTasks = allTasks.filter(t => t.status === 'completed').length;
+        const pendingTasks = allTasks.filter(t => t.status === 'new' || t.status === 'processing').length;
+        const totalRevenue = allTasks.reduce((sum, t) => sum + Number(t.paid_amount || 0), 0);
+
+        // جلب العملاء
+        const clientsSnap = await getDocs(collection(db, 'clients'));
+        const activeClients = clientsSnap.size;
+
+        // تجميع العملات للإيرادات
+        const currencyCounts: Record<string, number> = {};
+        allTasks.forEach(t => {
+          const cur = t.original_currency || 'YER';
+          currencyCounts[cur] = (currencyCounts[cur] || 0) + Number(t.paid_amount || 0);
+        });
+        const topCurrency = Object.entries(currencyCounts).sort((a, b) => b[1] - a[1])[0];
+        const formattedRevenue = totalRevenue.toLocaleString() + ' ' + (topCurrency?.[0] || 'YER');
+
         setStats({
-          activeClients: 124,
-          completedTasks: 45,
-          pendingTasks: 12,
-          totalRevenue: '450,000 YER'
+          activeClients,
+          completedTasks,
+          pendingTasks,
+          totalRevenue: formattedRevenue
         });
       } catch (error) {
-        handleFirestoreError(error, OperationType.GET, path);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
@@ -100,6 +119,10 @@ const Dashboard: React.FC = () => {
 
     fetchData();
   }, []);
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+  };
 
   const handleQuickTask = () => {
     logActivity('إضافة سريعة', 'قام المستخدم بفتح نافذة الإضافة السريعة من لوحة التحكم');
@@ -151,36 +174,44 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* قسم الإحصائيات (Stats Grid) */}
+      {/* قسم الإحصائيات (Stats Grid) - قابلة للنقر */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {loading ? (
           <Skeleton count={4} className="h-40 rounded-3xl" />
         ) : (
           <>
-            <StatCard 
-              label={t.clients} 
-              value={stats.activeClients} 
-              icon={Users} 
-              color="#00AEEF" 
-            />
-            <StatCard 
-              label="مهام مكتملة" 
-              value={stats.completedTasks} 
-              icon={ClipboardCheck} 
-              color="#0F2B48" 
-            />
-            <StatCard 
-              label="مهام معلقة" 
-              value={stats.pendingTasks} 
-              icon={AlertCircle} 
-              color="#00AEEF" 
-            />
-            <StatCard 
-              label="إجمالي الإيرادات" 
-              value={stats.totalRevenue} 
-              icon={TrendingUp} 
-              color="#0F2B48" 
-            />
+            <div onClick={() => handleNavigate('/clients')} className="cursor-pointer">
+              <StatCard 
+                label={t.clients} 
+                value={stats.activeClients} 
+                icon={Users} 
+                color="#00AEEF" 
+              />
+            </div>
+            <div onClick={() => handleNavigate('/tasks')} className="cursor-pointer">
+              <StatCard 
+                label={language === 'ar' ? 'مهام مكتملة' : 'Completed'}
+                value={stats.completedTasks} 
+                icon={ClipboardCheck} 
+                color="#0F2B48" 
+              />
+            </div>
+            <div onClick={() => handleNavigate('/tasks')} className="cursor-pointer">
+              <StatCard 
+                label={language === 'ar' ? 'مهام معلقة' : 'Pending'}
+                value={stats.pendingTasks} 
+                icon={AlertCircle} 
+                color="#00AEEF" 
+              />
+            </div>
+            <div onClick={() => handleNavigate('/reports')} className="cursor-pointer">
+              <StatCard 
+                label={language === 'ar' ? 'إجمالي الإيرادات' : 'Revenue'}
+                value={stats.totalRevenue} 
+                icon={TrendingUp} 
+                color="#0F2B48" 
+              />
+            </div>
           </>
         )}
       </div>
