@@ -22,7 +22,7 @@ import {
   TrendingDown,
   Trash2
 } from 'lucide-react';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { logActivity } from '../lib/audit';
@@ -31,6 +31,7 @@ import { useApp } from '../context/AppContext';
 import { translations } from '../lib/translations';
 import { SearchableSelect } from '../components/SearchableSelect';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { UserProfile } from '../types';
 
 export interface OperationalExpense {
   expense_id: string;
@@ -95,10 +96,29 @@ const Expenses: React.FC = () => {
     currency: 'USD' as OperationalExpense['currency'],
     source_account: SOURCE_ACCOUNTS[0],
     recipient: '',
-    notes: ''
+    notes: '',
+    employee_id: '',
+    employee_name: ''
   });
   const [formTooltip, setFormTooltip] = useState<string | null>(null);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  
+  // قائمة الموظفين لربط المصروف
+  const [employeesList, setEmployeesList] = useState<UserProfile[]>([]);
+  
+  // جلب قائمة الموظفين
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const empList = snapshot.docs.map(doc => doc.data() as UserProfile);
+        setEmployeesList(empList);
+      } catch (err) {
+        console.warn('Error fetching employees:', err);
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   // جلب سجل المصروفات الحية من Firestore
   useEffect(() => {
@@ -143,7 +163,7 @@ const Expenses: React.FC = () => {
     }
 
     const expId = editingExpenseId || `EXP-${Math.floor(10000 + Math.random() * 90000)}`;
-    const expenseData: Partial<OperationalExpense> = {
+    const expenseData: any = {
       title: expenseForm.title,
       category: expenseForm.category,
       amount: Number(expenseForm.amount),
@@ -151,6 +171,8 @@ const Expenses: React.FC = () => {
       source_account: expenseForm.source_account,
       recipient: expenseForm.recipient,
       notes: expenseForm.notes,
+      employee_id: expenseForm.employee_id,
+      employee_name: expenseForm.employee_name,
     };
 
     if (!editingExpenseId) {
@@ -183,7 +205,9 @@ const Expenses: React.FC = () => {
       currency: expense.currency,
       source_account: expense.source_account,
       recipient: expense.recipient || '',
-      notes: expense.notes || ''
+      notes: expense.notes || '',
+      employee_id: (expense as any).employee_id || '',
+      employee_name: (expense as any).employee_name || ''
     });
     setEditingExpenseId(expense.expense_id);
     setIsModalOpen(true);
@@ -199,7 +223,9 @@ const Expenses: React.FC = () => {
       currency: 'USD',
       source_account: SOURCE_ACCOUNTS[0],
       recipient: '',
-      notes: ''
+      notes: '',
+      employee_id: '',
+      employee_name: ''
     });
   };
 
@@ -531,6 +557,20 @@ const Expenses: React.FC = () => {
                     <option value="شركة الشحن" />
                     <option value="فريق الدعم" />
                   </datalist>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">الموظف المرتبط بالمصروف</label>
+                  <SearchableSelect
+                    options={employeesList.map(emp => ({ value: emp.uid, label: emp.username, sublabel: emp.role || 'موظف' }))}
+                    value={expenseForm.employee_id}
+                    onChange={(val) => {
+                      const emp = employeesList.find(e => e.uid === val);
+                      setExpenseForm({ ...expenseForm, employee_id: val, employee_name: emp?.username || '' });
+                    }}
+                    placeholder="ابحث عن الموظف واختره من القائمة..."
+                    title="اختر الموظف المسؤول أو المسحوب له"
+                  />
                 </div>
 
                 <div className="pt-4 flex gap-3">

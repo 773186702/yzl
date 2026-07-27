@@ -379,6 +379,65 @@ export const translations = {
     exchange_rates_log_title: 'تحديث أسعار الصرف',
     exchange_rates_log_message: 'تم تحديث أسعار الصرف: 1 USD = {usd} YER, 1 SAR = {sar} YER',
     exchange_rate_sync_success: 'تم مزامنة أسعار الصرف لجميع الموظفين ✅',
+    
+    // 🔐 الصلاحيات الجديدة
+    perm_approve_task: 'الموافقة على المهام',
+    perm_execute_task: 'تنفيذ المهام',
+    perm_view_financial_reports: 'عرض التقارير المالية',
+    perm_manage_expenses: 'إدارة المصروفات',
+    perm_manage_revenue: 'إدارة الإيرادات',
+    perm_issue_invoices: 'إصدار الفواتير',
+    perm_view_employee_reports: 'تقارير الموظفين',
+    perm_deduct_employee: 'خصم من الموظف',
+    
+    // 📋 قوالب الصلاحيات
+    permission_preset: 'قالب الصلاحيات',
+    select_permission_preset: 'اختر قالب صلاحيات مسبق للدور',
+    preset_staff: 'موظف عادي (صلاحيات أساسية)',
+    preset_accountant: 'محاسب (صلاحيات مالية)',
+    preset_agent: 'مندوب (تنفيذ المهام)',
+    preset_admin: 'مدير نظام (جميع الصلاحيات)',
+    custom_permissions: 'صلاحيات مخصصة',
+    apply_preset: 'تطبيق القالب',
+    
+    // 📊 تقارير الموظفين والعملاء
+    employee_statement: 'كشف حساب موظف',
+    employee_statement_desc: 'تقارير تفصيلية للموظفين تشمل المهام والإيرادات والديون',
+    client_statement: 'كشف حساب عميل',
+    client_statement_desc: 'تقارير تفصيلية للعملاء تشمل الخدمات والديون والمدفوعات',
+    select_employee_report: 'اختر الموظف',
+    select_employee_report_placeholder: 'ابحث عن موظف...',
+    select_client_statement: 'اختر العميل',
+    select_client_placeholder: 'ابحث عن عميل...',
+    employee_total_tasks: 'إجمالي المهام',
+    employee_total_revenue: 'إجمالي الإيرادات المحققة',
+    employee_total_client_debts: 'إجمالي ديون العملاء',
+    employee_total_expenses: 'إجمالي المصروفات',
+    employee_total_withdrawals: 'إجمالي المسحوبات',
+    employee_net_balance: 'صافي الرصيد',
+    client_total_services: 'إجمالي الخدمات',
+    client_total_paid: 'إجمالي المدفوعات',
+    client_total_remaining: 'إجمالي المتبقي',
+    
+    // 💳 ربط المصروف بالموظف
+    expense_link_to_employee: 'ربط المصروف بالموظف',
+    expense_link_to_employee_placeholder: 'اختر الموظف المسؤول عن المصروف...',
+    expense_employee_hint: 'يتم خصم المصروف من حساب الموظف',
+    employee_deduction: 'خصم من الموظف',
+    withdrawal: 'سحب',
+    add_withdrawal: 'تسجيل سحب',
+    withdrawal_title: 'تسجيل سحب مبلغ للموظف',
+    withdrawal_from_employee: 'سحب من الموظف',
+    expense_linked_to_employee: 'مرتبط بالموظف',
+    
+    // 📈 تحسين التقارير
+    detailed_reports: 'تقارير تفصيلية',
+    export_employee_statement_pdf: 'تصدير كشف موظف PDF',
+    export_client_statement_pdf: 'تصدير كشف عميل PDF',
+    report_period: 'الفترة',
+    report_generated: 'تم إنشاء التقرير',
+    no_data_for_report_period: 'لا توجد بيانات للفترة المحددة',
+    total_summary: 'ملخص الإجماليات',
   },
   en: {
     app_name: 'YZL Travel & Logistics Services',
@@ -752,6 +811,65 @@ export const translations = {
     exchange_rates_log_title: 'Exchange Rates Update',
     exchange_rates_log_message: 'Exchange rates updated: 1 USD = {usd} YER, 1 SAR = {sar} YER',
     exchange_rate_sync_success: 'Exchange rates synced for all staff ✅',
+    
+    // 🔐 New Permissions
+    perm_approve_task: 'Approve Tasks',
+    perm_execute_task: 'Execute Tasks',
+    perm_view_financial_reports: 'View Financial Reports',
+    perm_manage_expenses: 'Manage Expenses',
+    perm_manage_revenue: 'Manage Revenue',
+    perm_issue_invoices: 'Issue Invoices',
+    perm_view_employee_reports: 'View Employee Reports',
+    perm_deduct_employee: 'Deduct from Employee',
+    
+    // 📋 Permission Presets
+    permission_preset: 'Permission Preset',
+    select_permission_preset: 'Select a role permission preset',
+    preset_staff: 'Staff (Basic Permissions)',
+    preset_accountant: 'Accountant (Financial Permissions)',
+    preset_agent: 'Agent (Task Execution)',
+    preset_admin: 'System Admin (All Permissions)',
+    custom_permissions: 'Custom Permissions',
+    apply_preset: 'Apply Preset',
+    
+    // 📊 Employee & Client Reports
+    employee_statement: 'Employee Statement',
+    employee_statement_desc: 'Detailed employee reports including tasks, revenue, and debts',
+    client_statement: 'Client Statement',
+    client_statement_desc: 'Detailed client reports including services, debts, and payments',
+    select_employee_report: 'Select Employee',
+    select_employee_report_placeholder: 'Search employee...',
+    select_client_statement: 'Select Client',
+    select_client_placeholder: 'Search client...',
+    employee_total_tasks: 'Total Tasks',
+    employee_total_revenue: 'Total Revenue Generated',
+    employee_total_client_debts: 'Total Client Debts',
+    employee_total_expenses: 'Total Expenses',
+    employee_total_withdrawals: 'Total Withdrawals',
+    employee_net_balance: 'Net Balance',
+    client_total_services: 'Total Services',
+    client_total_paid: 'Total Paid',
+    client_total_remaining: 'Total Remaining',
+    
+    // 💳 Expense-Employee Linking
+    expense_link_to_employee: 'Link Expense to Employee',
+    expense_link_to_employee_placeholder: 'Select the employee responsible for this expense...',
+    expense_employee_hint: 'Expense will be deducted from employee account',
+    employee_deduction: 'Employee Deduction',
+    withdrawal: 'Withdrawal',
+    add_withdrawal: 'Record Withdrawal',
+    withdrawal_title: 'Record Employee Withdrawal',
+    withdrawal_from_employee: 'Employee Withdrawal',
+    expense_linked_to_employee: 'Linked to Employee',
+    
+    // 📈 Reports Enhancement
+    detailed_reports: 'Detailed Reports',
+    export_employee_statement_pdf: 'Export Employee Statement PDF',
+    export_client_statement_pdf: 'Export Client Statement PDF',
+    report_period: 'Period',
+    report_generated: 'Report Generated',
+    no_data_for_report_period: 'No data for the specified period',
+    total_summary: 'Total Summary',
   }
 };
 

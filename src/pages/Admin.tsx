@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { UserProfile, FixedService, PaymentGateway } from '../types';
+import { UserProfile, FixedService, PaymentGateway, ALL_PERMISSIONS_LIST, ROLE_PERMISSION_PRESETS } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { logActivity } from '../lib/audit';
 
@@ -70,22 +70,11 @@ const Admin: React.FC = () => {
     { id: 'PAY-MAHFAZATI', name_ar: 'محفظتي Mahfazati', name_en: 'Mahfazati Wallet', type: 'wallet', is_active: true },
   ]);
 
-  // قائمة بكافة الصلاحيات المتاحة في النظام
-  const allPermissions = [
-    { id: 'view_tasks', label: 'عرض المهام', category: 'العمليات' },
-    { id: 'edit_task', label: 'تعديل المهام', category: 'العمليات' },
-    { id: 'delete_task', label: 'حذف المهام', category: 'العمليات' },
-    { id: 'add_client', label: 'إضافة عملاء', category: 'العملاء' },
-    { id: 'edit_client', label: 'تعديل عملاء', category: 'العملاء' },
-    { id: 'view_ledger', label: 'عرض السجل المالي', category: 'المالية' },
-    { id: 'add_expense', label: 'إضافة مصروفات', category: 'المالية' },
-    { id: 'manage_services', label: 'إدارة كتالوج الخدمات', category: 'النظام' },
-    { id: 'manage_users', label: 'إدارة المستخدمين', category: 'النظام' },
-    { id: 'manage_payment_methods', label: 'إدارة طرق الدفع', category: 'النظام' },
-    { id: 'manage_currencies', label: 'إدارة العملات', category: 'النظام' },
-    { id: 'view_dashboard', label: 'عرض لوحة التحكم', category: 'النظام' },
-    { id: 'admin', label: 'مدير نظام كامل', category: 'النظام' },
-  ];
+  // قائمة بكافة الصلاحيات المتاحة في النظام (مستوردة من types.ts)
+  const allPermissions = ALL_PERMISSIONS_LIST;
+
+  // حالة اختيار قالب الصلاحيات
+  const [selectedPreset, setSelectedPreset] = useState<string>('staff');
 
   useEffect(() => {
     fetchUsers();
@@ -121,7 +110,7 @@ const Admin: React.FC = () => {
   };
 
   /**
-   * إنشاء مستخدم جديد وتسجيله بـ Firestore
+   * إنشاء مستخدم جديد وتسجيله بـ Firestore مع الصلاحيات المسبقة
    */
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,23 +118,27 @@ const Admin: React.FC = () => {
     try {
       const tempId = Math.random().toString(36).substring(7);
       const userRef = doc(db, 'users', tempId);
-      // NOTE: For real authentication, use createUserWithEmailAndPassword(auth, newUser.email, newUser.password) here.
-      // But we are simulating backend creation to prevent logging out the admin.
+      
+      // تحديد الصلاحيات حسب قالب الدور المختار
+      const rolePreset = selectedPreset as keyof typeof ROLE_PERMISSION_PRESETS;
+      const presetPermissions = ROLE_PERMISSION_PRESETS[rolePreset] || ROLE_PERMISSION_PRESETS.staff;
+      
       const profile: UserProfile = {
         uid: tempId,
         username: newUser.username,
         email: newUser.email,
         role: newUser.role as any,
-        permissions: ['view_tasks'],
+        permissions: [...presetPermissions],
         biometricEnabled: false,
         is_active: true,
         created_at: new Date()
       };
       await setDoc(userRef, profile);
-      await logActivity('إنشاء مستخدم', `قام المسؤول بإنشاء مستخدم جديد: ${newUser.username}`);
+      await logActivity('إنشاء مستخدم', `قام المسؤول بإنشاء مستخدم جديد: ${newUser.username} بدور ${newUser.role} مع ${presetPermissions.length} صلاحية`);
       setUsers([...users, profile]);
       setIsAddingUser(false);
       setNewUser({ username: '', email: '', password: '', role: 'staff' });
+      setSelectedPreset('staff');
     } catch (error) {
       alert('حدث خطأ أثناء إنشاء المستخدم');
     } finally {
@@ -518,10 +511,29 @@ const Admin: React.FC = () => {
                   className="w-full p-4 bg-slate-50 dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:border-yazal-cyan focus:ring-1 ring-yazal-cyan"
                 >
                   <option value="staff">موظف (Staff)</option>
-                  <option value="agent">وكيل (Agent)</option>
+                  <option value="agent">وكيل (Agent) - مندوب</option>
                   <option value="accountant">محاسب (Accountant)</option>
                   <option value="admin">مسؤول نظام (Admin)</option>
                 </select>
+
+                {/* اختيار قالب الصلاحيات المسبق */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 block">قالب الصلاحيات (يتحدد تلقائياً حسب الدور)</label>
+                  <select 
+                    value={selectedPreset} 
+                    onChange={e => setSelectedPreset(e.target.value)}
+                    className="w-full p-4 bg-slate-50 dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:border-yazal-cyan focus:ring-1 ring-yazal-cyan"
+                  >
+                    <option value="staff">موظف عادي (صلاحيات أساسية)</option>
+                    <option value="agent">مندوب (تنفيذ المهام)</option>
+                    <option value="accountant">محاسب (صلاحيات مالية كاملة)</option>
+                    <option value="admin">مدير نظام (جميع الصلاحيات)</option>
+                  </select>
+                  <p className="text-[9px] text-slate-400 font-bold px-1">
+                    سيتم تطبيق {ROLE_PERMISSION_PRESETS[selectedPreset as keyof typeof ROLE_PERMISSION_PRESETS]?.length || 0} صلاحية مسبقاً
+                  </p>
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setIsAddingUser(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 font-black text-xs uppercase rounded-2xl">إلغاء</button>
                   <button type="submit" className="flex-1 py-4 bg-yazal-navy text-white font-black text-xs uppercase rounded-2xl shadow-xl">تأكيد الإضافة</button>

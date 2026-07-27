@@ -10,10 +10,80 @@
  * أدوار المستخدمين المتاحة في نظام يزل:
  * - admin: مدير النظام بكافة الصلاحيات
  * - staff: موظف تشغيل وإدخال معاملات
- * - agent: وكيل خارجي متابع
+ * - agent: وكيل خارجي متابع (مندوب)
  * - accountant: محاسب مالي مراجِع
  */
 export type UserRole = 'admin' | 'staff' | 'agent' | 'accountant';
+
+/**
+ * قائمة بجميع الصلاحيات المتاحة في النظام
+ */
+export const ALL_PERMISSIONS_LIST = [
+  // العمليات
+  { id: 'view_tasks', label: 'عرض المهام', category: 'العمليات' },
+  { id: 'create_task', label: 'إنشاء مهمة جديدة', category: 'العمليات' },
+  { id: 'edit_task', label: 'تعديل المهام', category: 'العمليات' },
+  { id: 'delete_task', label: 'حذف المهام', category: 'العمليات' },
+  { id: 'approve_task', label: 'الموافقة على المهام', category: 'العمليات' },
+  { id: 'execute_task', label: 'تنفيذ المهام', category: 'العمليات' },
+  
+  // العملاء
+  { id: 'add_client', label: 'إضافة عملاء', category: 'العملاء' },
+  { id: 'edit_client', label: 'تعديل عملاء', category: 'العملاء' },
+  
+  // المالية
+  { id: 'view_ledger', label: 'عرض السجل المالي', category: 'المالية' },
+  { id: 'view_financial_reports', label: 'عرض التقارير المالية', category: 'المالية' },
+  { id: 'manage_expenses', label: 'إدارة المصروفات', category: 'المالية' },
+  { id: 'manage_revenue', label: 'إدارة الإيرادات', category: 'المالية' },
+  { id: 'issue_invoices', label: 'إصدار الفواتير', category: 'المالية' },
+  { id: 'view_employee_reports', label: 'تقارير الموظفين', category: 'المالية' },
+  { id: 'deduct_employee', label: 'خصم من الموظف', category: 'المالية' },
+  { id: 'add_expense', label: 'إضافة مصروفات', category: 'المالية' },
+  
+  // النظام
+  { id: 'manage_services', label: 'إدارة كتالوج الخدمات', category: 'النظام' },
+  { id: 'manage_users', label: 'إدارة المستخدمين', category: 'النظام' },
+  { id: 'manage_payment_methods', label: 'إدارة طرق الدفع', category: 'النظام' },
+  { id: 'manage_currencies', label: 'إدارة العملات', category: 'النظام' },
+  { id: 'view_dashboard', label: 'عرض لوحة التحكم', category: 'النظام' },
+  { id: 'admin', label: 'مدير نظام كامل', category: 'النظام' },
+] as const;
+
+/**
+ * قوالب الصلاحيات المسبقة حسب الدور الوظيفي
+ */
+export const ROLE_PERMISSION_PRESETS: Record<UserRole, string[]> = {
+  admin: ALL_PERMISSIONS_LIST.map(p => p.id),
+  staff: [
+    'view_tasks',
+    'create_task',
+    'edit_task',
+    'add_client',
+    'edit_client',
+    'view_dashboard',
+  ],
+  accountant: [
+    'view_tasks',
+    'create_task',
+    'edit_task',
+    'add_client',
+    'view_ledger',
+    'view_financial_reports',
+    'manage_expenses',
+    'manage_revenue',
+    'issue_invoices',
+    'add_expense',
+    'view_employee_reports',
+    'view_dashboard',
+  ],
+  agent: [
+    'view_tasks',
+    'execute_task',
+    'edit_task',
+    'view_dashboard',
+  ],
+};
 
 /**
  * واجهة ملف تعريف المستخدم وصلاحياته المخصصة
@@ -125,6 +195,9 @@ export interface Expense {
   currency: Currency; // العملة
   source_account: string; // الحساب الخصم منه
   created_by?: string; // الموظف
+  recipient?: string; // المستلم	
+  employee_id?: string; // معرف الموظف المرتبط (لربط المصروف بالموظف)
+  employee_name?: string; // اسم الموظف المرتبط
   date: any; // تاريخ المصروف
 }
 
