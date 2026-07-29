@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import logoSrc from '../assets/images/yazal_logo_1784807246124.jpg';
+import logoSrc from '../assets/images/yazal_logo_1784807246124.png';
 
 interface YZLOriginalLogoProps {
   className?: string;
