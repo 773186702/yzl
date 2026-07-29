@@ -215,7 +215,7 @@ const CreateTask: React.FC = () => {
         created_by: profile?.username || 'الموظف الحالي',
         created_by_employee_name: profile?.username || 'الموظف الحالي',
         assigned_to: profile?.username || 'الموظف المنفذ',
-        status: 'new',
+        status: 'pending_approval',
         original_currency: currency as any,
         total_price: numPrice,
         paid_amount: numPaid,

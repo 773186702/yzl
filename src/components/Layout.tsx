@@ -26,7 +26,8 @@ import {
   CreditCard,
   FileText,
   Database,
-  User
+  User,
+  Scale
 } from 'lucide-react';
 import { requestNotificationPermission } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -62,6 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'currencies', label: t.currencies, icon: DollarSign, path: '/currencies', permission: 'admin' },
     { id: 'payment-methods', label: t.payment_methods, icon: CreditCard, path: '/payment-methods', permission: 'admin' },
     { id: 'reports', label: t.reports, icon: FileText, path: '/reports', permission: 'view_ledger' },
+    { id: 'monthly-reconciliation', label: t.monthly_reconciliation || 'المطابقة المالية', icon: Scale, path: '/monthly-reconciliation', permission: 'view_financial_reports' },
     { id: 'admin', label: t.admin, icon: ShieldCheck, path: '/admin', permission: 'admin' },
     { id: 'system-reset', label: t.system_reset || 'تهيئة النظام', icon: Database, path: '/system-reset', permission: 'admin' },
     { id: 'settings', label: t.settings, icon: Sliders, path: '/settings', permission: null },
@@ -74,21 +76,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-yazal-bg dark:bg-yazal-navy-dark text-yazal-navy dark:text-white transition-colors duration-300">
       {/* Header - شريط الرأس */}
-      <header className="fixed top-0 w-full z-50 bg-yazal-navy text-white shadow-lg min-h-16 py-3 flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 border-b border-white/5">
+      <header className="fixed top-0 w-full z-50 bg-yazal-navy text-white shadow-lg min-h-14 py-2 flex flex-wrap items-center justify-between gap-2 px-3 md:px-6 border-b border-white/5">
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 mr-1 md:hidden shrink-0"
+          className="p-1.5 mr-1 md:hidden shrink-0"
         >
-          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
         
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <YZLOriginalLogo size={90} />
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <YZLOriginalLogo size={60} />
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg lg:text-xl font-black tracking-tight leading-none text-white truncate">
+            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight leading-none text-white truncate">
               {t.app_name}
             </h1>
-            <p className="text-[10px] uppercase tracking-widest text-white/70 mt-1 truncate">
+            <p className="text-[9px] uppercase tracking-widest text-white/70 mt-0.5 truncate">
               {t.app_tagline}
             </p>
           </div>
@@ -210,7 +212,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </AnimatePresence>
 
       {/* Main Content - المحتوى الرئيسي */}
-      <main className={`pt-20 px-4 md:px-8 pb-8 transition-all duration-300 ${isRTL ? 'md:pr-72' : 'md:pl-72'}`}>
+      <main className={`pt-24 px-3 md:px-6 pb-6 transition-all duration-300 ${isRTL ? 'md:pr-72' : 'md:pl-72'}`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

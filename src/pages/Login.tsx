@@ -332,7 +332,7 @@ const Login: React.FC = () => {
       >
         <div className="text-center mb-10">
           <div className="flex justify-center mb-6">
-            <YZLOriginalLogo size={180} />
+            <YZLOriginalLogo size={130} />
           </div>
           <h1 className="text-3xl font-black text-yazal-navy dark:text-white tracking-tight uppercase">
             {t.app_name}
@@ -449,12 +449,12 @@ const Login: React.FC = () => {
       </motion.div>
 
       {/* PIN Fallback Modal */}
-      {showPinModal && (
+          {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-yazal-navy/80 backdrop-blur-md p-4">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-yazal-navy-light w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center"
+            className="bg-white dark:bg-yazal-navy-light w-full max-w-sm max-h-[90vh] overflow-y-auto scrollbar-yazal rounded-3xl p-6 shadow-2xl text-center"
           >
             <ShieldCheck className="mx-auto text-yazal-cyan mb-4" size={48} />
             <h3 className="text-xl font-black text-yazal-navy dark:text-white mb-2 uppercase tracking-tight">أدخل رمز PIN</h3>

@@ -22,7 +22,8 @@ import {
   Printer, 
   ArrowRight,
   DollarSign,
-  Trash2
+  Trash2,
+  Play
 } from 'lucide-react';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, increment } from 'firebase/firestore';
 import { db, showBrowserNotification } from '../lib/firebase';
@@ -219,7 +220,8 @@ const Tasks: React.FC = () => {
         <div className="flex bg-white dark:bg-yazal-navy-light p-1.5 rounded-2xl border border-slate-100 dark:border-white/5 overflow-x-auto">
           {[
             { id: 'all', label: 'الكل' },
-            { id: 'new', label: 'جديد' },
+            { id: 'pending_approval', label: 'بانتظار الاعتماد' },
+            { id: 'approved', label: 'معتمد' },
             { id: 'processing', label: 'قيد التنفيذ' },
             { id: 'completed', label: 'مكتمل' },
             { id: 'cancelled', label: 'ملغي' },
@@ -261,10 +263,14 @@ const Tasks: React.FC = () => {
                 <div className="flex items-start gap-5">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shrink-0 shadow-md ${
                     task.status === 'completed' ? 'bg-emerald-500' :
-                    task.status === 'processing' ? 'bg-yazal-cyan' : 'bg-yazal-navy'
+                    task.status === 'approved' ? 'bg-blue-500' :
+                    task.status === 'processing' ? 'bg-yazal-cyan' :
+                    task.status === 'pending_approval' ? 'bg-amber-500' : 'bg-yazal-navy'
                   }`}>
                     {task.status === 'completed' ? <CheckCircle2 size={24} /> :
-                     task.status === 'processing' ? <Clock size={24} /> : <AlertCircle size={24} />}
+                     task.status === 'approved' ? <Check size={24} /> :
+                     task.status === 'processing' ? <Clock size={24} /> :
+                     task.status === 'pending_approval' ? <AlertCircle size={24} /> : <XCircle size={24} />}
                   </div>
 
                   <div className="space-y-1">
@@ -308,14 +314,46 @@ const Tasks: React.FC = () => {
 
                     {/* أزرار الإجراءات والشير */}
                   <div className="flex items-center gap-2">
+                    {/* أزرار الاعتماد للمحاسب */}
+                    {task.status === 'pending_approval' && (profile?.role === 'accountant' || profile?.role === 'admin') && (
+                      <>
+                        <button
+                          onClick={() => handleStatusChange(task.task_id, 'approved' as Task['status'])}
+                          title={t.approve_task || 'اعتماد المهمة'}
+                          className="p-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-500/20"
+                        >
+                          <Check size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(task.task_id, 'cancelled' as Task['status'])}
+                          title={t.reject_task || 'رفض المهمة'}
+                          className="p-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors shadow-md shadow-rose-500/20"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    )}
+
+                    {/* زر تنفيذ المهمة للمندوب - بعد الاعتماد */}
+                    {task.status === 'approved' && hasPermission('execute_task') && (
+                      <button
+                        onClick={() => handleStatusChange(task.task_id, 'processing' as Task['status'])}
+                        title={t.execute_task_btn || 'تنفيذ المهمة'}
+                        className="p-2.5 bg-yazal-cyan text-yazal-navy rounded-xl hover:brightness-110 transition-colors shadow-md shadow-yazal-cyan/20 font-black text-[10px] uppercase"
+                      >
+                        <Play size={18} />
+                      </button>
+                    )}
+
                     {/* خيارات الحالة - يحتاج صلاحية تعديل المهام */}
-                    {hasPermission('edit_task') && (
+                    {hasPermission('edit_task') && profile?.role !== 'agent' && (
                       <select 
                         value={task.status}
                         onChange={(e) => handleStatusChange(task.task_id, e.target.value as Task['status'])}
                         className="p-2.5 bg-slate-100 dark:bg-yazal-navy-dark font-black text-xs rounded-xl text-yazal-navy dark:text-white border-none outline-none focus:ring-2 ring-yazal-cyan cursor-pointer"
                       >
-                        <option value="new">جديد</option>
+                        <option value="pending_approval">بانتظار الاعتماد</option>
+                        <option value="approved">معتمد</option>
                         <option value="processing">قيد التنفيذ</option>
                         <option value="completed">مكتمل</option>
                         <option value="cancelled">ملغي</option>
@@ -373,7 +411,7 @@ const Tasks: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-yazal-navy-light w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 p-8 space-y-6"
+              className="bg-white dark:bg-yazal-navy-light w-full max-w-md max-h-[90vh] overflow-y-auto scrollbar-yazal rounded-[2.5rem] shadow-2xl relative z-10 p-4 md:p-6 lg:p-8 space-y-6"
             >
               <div className="flex justify-between items-center border-b border-slate-100 dark:border-white/5 pb-4">
                 <div>

@@ -157,7 +157,7 @@ export interface Task {
   created_by: string; // الموظف المنشئ
   created_by_employee_name?: string; // الاسم الكامل للموظف الذي أنشأ المهمة
   assigned_to: string; // الموظف المنفذ
-  status: 'new' | 'processing' | 'completed' | 'cancelled'; // حالة المعاملة
+  status: 'new' | 'pending_approval' | 'approved' | 'processing' | 'completed' | 'cancelled'; // حالة المعاملة
   original_currency: Currency; // العملة الأصلية
   total_price: number; // المبلغ الإجمالي
   paid_amount: number; // المبلغ المدفوع

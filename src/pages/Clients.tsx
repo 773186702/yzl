@@ -493,7 +493,7 @@ const Clients: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white dark:bg-yazal-navy-light w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 p-8 space-y-6"
+              className="bg-white dark:bg-yazal-navy-light w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-yazal rounded-[2.5rem] shadow-2xl relative z-10 p-4 md:p-6 lg:p-8 space-y-6"
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
