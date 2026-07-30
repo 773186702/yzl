@@ -1,52 +1,47 @@
-# خطة العمل - تحسين نظام يزل
+# خطة العمل - تحسين وتكامل نظام يزل
 
-## ✅ تم إنجازه
+## قائمة المهام المطلوب إنجازها
 
-### 1. الترجمات (translations.ts)
-- [x] إضافة حالات الاعتماد الجديدة (pending_approval, approved, approve_task, reject_task, execute_task_btn)
-- [x] إضافة مفردات المطابقة المالية الشهرية (monthly_reconciliation, select_month, select_year, إلخ)
-- [x] إضافة الترجمات الإنجليزية المقابلة
+### ✅ 1. تكبير حجم الشعار (Logo Size)
+- [x] Edit `src/components/YZLOriginalLogo.tsx` - Increase default size from 200 to 300
+- [x] Edit `src/components/Layout.tsx` - Increase logo size from 60 to 90
+- [x] Edit `src/pages/Dashboard.tsx` - Increase logo sizes (90/110/140)
+- [x] Edit `src/pages/Login.tsx` - Increase logo size from 130 to 180
 
-### 2. أنواع المهام (types.ts)
-- [x] إضافة صلاحية `approve_task` للمحاسب
-- [x] إضافة صلاحية `execute_task` للمندوب (agent)
-- [x] إضافة حالة `pending_approval` و `approved` إلى Task.status
-- [x] تحديث قوالب الصلاحيات للأدوار
+### ✅ 2. ربط العملات وطرق الدفع ديناميكياً في المصروفات
+- [ ] Edit `src/pages/Expenses.tsx` - Fetch currencies from Firestore
+- [ ] Edit `src/pages/Expenses.tsx` - Fetch payment methods from Firestore
+- [ ] Edit `src/pages/Expenses.tsx` - Replace hardcoded SOURCE_ACCOUNTS and currencies with dynamic data
 
-### 3. سير عمل الاعتماد (Tasks.tsx)
-- [x] إضافة أزرار الاعتماد/الرفض للمحاسب (تظهر فقط للمهام pending_approval)
-- [x] إضافة زر التنفيذ للمندوب (يظهر فقط للمهام المعتمدة)
-- [x] تحديث قائمة تصفية الحالة (pending_approval, approved)
-- [x] تحديث الأيقونات حسب الحالة
-- [x] تحديث خيارات dropdown الحالة
+### ✅ 3. إضافة فلاتر ديناميكية في المطابقة المالية
+- [ ] Edit `src/pages/MonthlyReconciliation.tsx` - Add currency filter
+- [ ] Edit `src/pages/MonthlyReconciliation.tsx` - Add service filter
+- [ ] Edit `src/pages/MonthlyReconciliation.tsx` - Add payment method filter
+- [ ] Edit `src/pages/MonthlyReconciliation.tsx` - Fetch dynamic data from Firestore
 
-### 4. صفحة المطابقة المالية الشهرية (MonthlyReconciliation.tsx)
-- [x] إنشاء الصفحة الجديدة مع اختيار الشهر والسنة
-- [x] عرض الإيرادات والمصروفات وصافي الربح/الخسارة
-- [x] تصدير PDF مع تنسيق عربي ومنسق
-- [x] تصدير CSV مع ترميز UTF-8 BOM
-- [x] إضافة المسار في App.tsx
-- [x] إضافة رابط في القائمة الجانبية Layout.tsx
-- [x] إضافة دالة تصدير PDF في pdfExporter.ts
-- [x] إضافة الترجمات في translations.ts
+### ✅ 4. إضافة صلاحيات محاسبية جديدة
+- [x] Edit `src/types.ts` - Add new permissions for accountant
+- [x] Edit `src/types.ts` - Update ROLE_PERMISSION_PRESETS for accountant role
 
-### 5. تحسينات عرض المودالات (Responsive & Scroll)
-- [x] Expenses.tsx - إضافة max-h و overflow-y-auto لمودال إضافة المصروف
-- [x] Clients.tsx - إضافة max-h و overflow-y-auto لمودال إضافة العميل
-- [x] Tasks.tsx - إضافة max-h و overflow-y-auto لمودال الفاتورة
-- [x] Login.tsx - تعديل حجم الشعار من 180 إلى 120
-- [x] Layout.tsx - تعديل حجم الشعار من 90 إلى 60
-- [x] Dashboard.tsx - تعديل مقاسات الشعار
-- [x] تم تغيير pt-20 إلى pt-24 لتعويض حجم الهيدر
-- [x] إصلاح تعارض overflow-hidden مع overflow-y-auto
+### ✅ 5. إضافة الترجمات الجديدة
+- [ ] Edit `src/lib/translations.ts` - Add translations for all new features
 
-### 6. تنسيق الهيدر (Header)
-- [x] تقليل حجم الشعار في الهيدر
-- [x] تحسين المسافات والـ padding على الموبايل
-- [x] إضافة min-h-14 بدلاً من min-h-16
-- [x] إضافة أيقونة Scale للمطابقة المالية في القائمة
+### ✅ 6. إضافة الصفحات والتقارير المحاسبية الجديدة
+- [ ] Create `src/pages/AccountChart.tsx` - دليل الحسابات
+- [ ] Create `src/pages/JournalEntries.tsx` - دفتر اليومية
+- [ ] Create `src/pages/BalanceSheet.tsx` - الميزانية العمومية
+- [ ] Create `src/pages/IncomeStatement.tsx` - قائمة الدخل
+- [ ] Create `src/pages/AuditTrail.tsx` - سجل التدقيق
+- [ ] Create `src/pages/EmployeeDeductions.tsx` - الخصومات من الموظفين
+- [ ] Create `src/pages/TaskManagement.tsx` - إدارة المهام المتقدمة
 
-### 7. المشاكل المتبقية
-- [ ] التأكد من عدم وجود خطأ TypeScript مع Scale في Layout.tsx (الملف موجود في lucide-react)
-- [ ] اختبار responsiveness يدوي للموبايل
+### ✅ 7. إضافة المسارات والروابط الجديدة
+- [ ] Edit `src/App.tsx` - Add routes for all new pages
+- [ ] Edit `src/components/Layout.tsx` - Add sidebar links for new pages
+
+### ✅ 8. اختبار ومراجعة
+- [ ] Verify logo sizes across all pages
+- [ ] Verify dynamic data loading in Expenses
+- [ ] Verify reconciliation filters work correctly
+- [ ] Provide completion summary
 

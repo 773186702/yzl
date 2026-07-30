@@ -41,6 +41,15 @@ export const ALL_PERMISSIONS_LIST = [
   { id: 'deduct_employee', label: 'خصم من الموظف', category: 'المالية' },
   { id: 'add_expense', label: 'إضافة مصروفات', category: 'المالية' },
   
+  // محاسبة متقدمة
+  { id: 'view_journal_entries', label: 'عرض دفتر اليومية', category: 'محاسبة' },
+  { id: 'view_balance_sheet', label: 'عرض الميزانية العمومية', category: 'محاسبة' },
+  { id: 'view_income_statement', label: 'عرض قائمة الدخل', category: 'محاسبة' },
+  { id: 'view_audit_trail', label: 'عرض سجل التدقيق', category: 'محاسبة' },
+  { id: 'manage_account_chart', label: 'إدارة دليل الحسابات', category: 'محاسبة' },
+  { id: 'view_employee_deductions', label: 'عرض خصومات الموظفين', category: 'محاسبة' },
+  { id: 'manage_task_board', label: 'إدارة لوحة المهام', category: 'محاسبة' },
+  
   // النظام
   { id: 'manage_services', label: 'إدارة كتالوج الخدمات', category: 'النظام' },
   { id: 'manage_users', label: 'إدارة المستخدمين', category: 'النظام' },
@@ -67,6 +76,7 @@ export const ROLE_PERMISSION_PRESETS: Record<UserRole, string[]> = {
     'view_tasks',
     'create_task',
     'edit_task',
+    'approve_task',
     'add_client',
     'view_ledger',
     'view_financial_reports',
@@ -75,6 +85,14 @@ export const ROLE_PERMISSION_PRESETS: Record<UserRole, string[]> = {
     'issue_invoices',
     'add_expense',
     'view_employee_reports',
+    'deduct_employee',
+    'view_employee_deductions',
+    'view_balance_sheet',
+    'view_income_statement',
+    'view_journal_entries',
+    'view_audit_trail',
+    'manage_account_chart',
+    'manage_task_board',
     'view_dashboard',
   ],
   agent: [

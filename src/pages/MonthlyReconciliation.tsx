@@ -3,23 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import {
-  Scale,
-  FileText,
-  Download,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Receipt,
-  Users,
-  CalendarDays,
-  AlertCircle,
-  CheckCircle,
-  FileDown,
-  BarChart3
-} from 'lucide-react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+
 import { db } from '../lib/firebase';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';

@@ -14,8 +14,9 @@ interface YZLOriginalLogoProps {
 /**
  * شعار المؤسسة الجديد (Institution Logo)
  * يستخدم صورة الشعار المرسلة بدلاً من شعار YZL الافتراضي.
+ * الحجم الافتراضي 300 بكسل ليكون مناسباً وواضحاً ومرئياً.
  */
-const YZLOriginalLogo: React.FC<YZLOriginalLogoProps> = ({ className = '', size = 200 }) => {
+const YZLOriginalLogo: React.FC<YZLOriginalLogoProps> = ({ className = '', size = 300 }) => {
   return (
     <div className={`relative flex items-center justify-center ${className}`}>
       <img

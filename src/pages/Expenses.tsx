@@ -38,7 +38,7 @@ export interface OperationalExpense {
   title: string;
   category: string;
   amount: number;
-  currency: 'YER' | 'SAR' | 'USD' | 'EGP' | 'AED' | 'EUR';
+  currency: string;
   source_account: string;
   recipient?: string; // المستلم
   notes?: string;
@@ -46,9 +46,7 @@ export interface OperationalExpense {
   date: Date;
 }
 
-/**
- * فئات المصروفات التشغيلية المعتمدة في شركة يزل
- */
+/** فئات المصروفات التشغيلية المعتمدة (ثابتة) */
 const EXPENSE_CATEGORIES = [
   'رواتب وأجور الكادر',
   'إيجار وتكاليف المقر الرئيسي',
@@ -60,20 +58,9 @@ const EXPENSE_CATEGORIES = [
 ];
 
 /**
- * الحسابات المالية ومصادر الخصم
- */
-const SOURCE_ACCOUNTS = [
-  'نقد كاش (الصندوق الرئيسي)',
-  'كريمي جوال (حساب بنكي)',
-  'محفظة وان كاش One Cash',
-  'محفظة جوالي Jawali',
-  'محفظتي Mahfazati',
-  'حوالة محلية صرافة'
-];
-
-/**
  * صفحة إدارة المصروفات التشغيلية (Operational Expenses Ledger)
  * تتيح تسجيل المصروفات وربطها بالخصم المباشر من الحسابات المالية المعتمدة
+ * العملات وطرق الدفع تُسحب ديناميكياً من Firestore حسب ما يدخله المدير
  */
 const Expenses: React.FC = () => {
   const { profile, user, hasPermission } = useAuth();
@@ -88,36 +75,75 @@ const Expenses: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
+  // بيانات ديناميكية من Firestore
+  const [dynamicCurrencies, setDynamicCurrencies] = useState<{ code: string; name: string }[]>([]);
+  const [dynamicSourceAccounts, setDynamicSourceAccounts] = useState<{ id: string; name: string; type: string }[]>([]);
+
   // حالة نموذج المصروف
   const [expenseForm, setExpenseForm] = useState({
     title: '',
     category: EXPENSE_CATEGORIES[0],
     amount: '',
-    currency: 'USD' as OperationalExpense['currency'],
-    source_account: SOURCE_ACCOUNTS[0],
+    currency: '',
+    source_account: '',
     recipient: '',
     notes: '',
     employee_id: '',
     employee_name: ''
   });
-  const [formTooltip, setFormTooltip] = useState<string | null>(null);
+
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   
   // قائمة الموظفين لربط المصروف
   const [employeesList, setEmployeesList] = useState<UserProfile[]>([]);
   
-  // جلب قائمة الموظفين
+  // جلب العملات وطرق الدفع والموظفين من Firestore ديناميكياً
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchDynamicData = async () => {
       try {
-        const snapshot = await getDocs(collection(db, 'users'));
-        const empList = snapshot.docs.map(doc => doc.data() as UserProfile);
+        // جلب العملات
+        const currenciesSnap = await getDocs(collection(db, 'currencies'));
+        const currenciesList = currenciesSnap.docs.map(d => ({ code: d.data().code, name: d.data().name }));
+        if (currenciesList.length > 0) {
+          setDynamicCurrencies(currenciesList);
+        } else {
+          // عملات افتراضية إذا لم يدخل المدير أي عملات
+          setDynamicCurrencies([
+            { code: 'YER', name: 'ريال يمني' },
+            { code: 'USD', name: 'دولار أمريكي' },
+            { code: 'SAR', name: 'ريال سعودي' },
+          ]);
+        }
+        
+        // جلب طرق الدفع
+        const paymentMethodsSnap = await getDocs(collection(db, 'payment_methods'));
+        const methodsList = paymentMethodsSnap.docs.map(d => ({ id: d.id, name: d.data().name, type: d.data().type }));
+        if (methodsList.length > 0) {
+          setDynamicSourceAccounts(methodsList);
+        } else {
+          // طرق دفع افتراضية
+          setDynamicSourceAccounts([
+            { id: 'cash_default', name: 'نقد كاش (الصندوق الرئيسي)', type: 'cash' },
+            { id: 'kuraimi_default', name: 'كريمي جوال (حساب بنكي)', type: 'bank' },
+          ]);
+        }
+
+        // جلب الموظفين
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const empList = usersSnap.docs.map(doc => doc.data() as UserProfile);
         setEmployeesList(empList);
+
+        // تعيين القيم الافتراضية بعد تحميل البيانات
+        setExpenseForm(prev => ({
+          ...prev,
+          currency: currenciesList.length > 0 ? currenciesList[0].code : 'YER',
+          source_account: methodsList.length > 0 ? methodsList[0].name : 'نقد كاش (الصندوق الرئيسي)',
+        }));
       } catch (err) {
-        console.warn('Error fetching employees:', err);
+        console.warn('Error fetching dynamic data:', err);
       }
     };
-    fetchEmployees();
+    fetchDynamicData();
   }, []);
 
   // جلب سجل المصروفات الحية من Firestore
@@ -220,8 +246,8 @@ const Expenses: React.FC = () => {
       title: '',
       category: EXPENSE_CATEGORIES[0],
       amount: '',
-      currency: 'USD',
-      source_account: SOURCE_ACCOUNTS[0],
+      currency: dynamicCurrencies.length > 0 ? dynamicCurrencies[0].code : 'USD',
+      source_account: dynamicSourceAccounts.length > 0 ? dynamicSourceAccounts[0].name : 'نقد كاش',
       recipient: '',
       notes: '',
       employee_id: '',
@@ -510,20 +536,13 @@ const Expenses: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">العملة</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">العملة (من فهرس العملات)</label>
                     <SearchableSelect
-                      options={[
-                        { value: 'USD', label: 'USD ($)' },
-                        { value: 'YER', label: 'YER (ريال يمني)' },
-                        { value: 'SAR', label: 'SAR (ريال سعودي)' },
-                        { value: 'EGP', label: 'EGP (جنيه مصري)' },
-                        { value: 'AED', label: 'AED (درهم إماراتي)' },
-                        { value: 'EUR', label: 'EUR (€)' },
-                      ]}
+                      options={dynamicCurrencies.map(c => ({ value: c.code, label: `${c.name} (${c.code})`, sublabel: c.code }))}
                       value={expenseForm.currency}
-                      onChange={(val) => setExpenseForm({ ...expenseForm, currency: val as any })}
+                      onChange={(val) => setExpenseForm({ ...expenseForm, currency: val })}
                       placeholder="العملة..."
-                      title="عملة المصروف"
+                      title="اختر العملة من القائمة الديناميكية"
                     />
                   </div>
                 </div>
@@ -531,7 +550,7 @@ const Expenses: React.FC = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">حساب الخصم الصادر</label>
                   <SearchableSelect
-                    options={SOURCE_ACCOUNTS.map(acc => ({ value: acc, label: acc }))}
+                    options={dynamicSourceAccounts.map(acc => ({ value: acc.name, label: acc.name, sublabel: acc.type }))}
                     value={expenseForm.source_account}
                     onChange={(val) => setExpenseForm({ ...expenseForm, source_account: val })}
                     placeholder="حساب الدفع..."

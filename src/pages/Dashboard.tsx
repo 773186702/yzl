@@ -137,9 +137,9 @@ const Dashboard: React.FC = () => {
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           <div className="text-center md:text-right space-y-3 sm:space-y-4">
           <div className="flex justify-center md:justify-start">
-              <YZLOriginalLogo size={60} className="sm:hidden" />
-              <YZLOriginalLogo size={75} className="hidden sm:block md:hidden" />
-              <YZLOriginalLogo size={90} className="hidden md:block" />
+              <YZLOriginalLogo size={90} className="sm:hidden" />
+              <YZLOriginalLogo size={110} className="hidden sm:block md:hidden" />
+              <YZLOriginalLogo size={140} className="hidden md:block" />
             </div>
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-snug sm:leading-tight">
               مرحباً بك في نظام شركة يزل للسفريات والخدمات اللوجستية

@@ -85,7 +85,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </button>
         
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <YZLOriginalLogo size={60} />
+          <YZLOriginalLogo size={90} />
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight leading-none text-white truncate">
               {t.app_name}
