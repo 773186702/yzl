@@ -89,141 +89,201 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-yazal-bg dark:bg-yazal-navy-dark text-yazal-navy dark:text-white transition-colors duration-300">
-      {/* Header - شريط الرأس */}
-      <header className="fixed top-0 w-full z-50 bg-yazal-navy text-white shadow-lg min-h-14 py-2 flex flex-wrap items-center justify-between gap-2 px-3 md:px-6 border-b border-white/5">
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-1.5 mr-1 md:hidden shrink-0"
-        >
-          {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-        
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-<YZLOriginalLogo size={150} />
-          <div className="min-w-0">
-            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight leading-none text-white truncate">
-              {t.app_name}
-            </h1>
-            <p className="text-[9px] uppercase tracking-widest text-white/70 mt-0.5 truncate">
-              {t.app_tagline}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 ml-auto shrink-0">
-          <div className="flex items-center rounded-full bg-white/10 border border-white/10 px-2 py-1 gap-1 sm:gap-2">
+      {/* Header - شريط الرأس - مُحسّن لمنع الالتفاف والغطاء */}
+      <header className="fixed top-0 inset-x-0 z-50 bg-yazal-navy text-white shadow-lg border-b border-white/5">
+        <div className="flex items-center justify-between h-14 md:h-16 px-2 md:px-4 lg:px-6 max-w-full">
+          {/* الجانب الأيسر: زر القائمة + اللوجو */}
+          <div className="flex items-center gap-1.5 md:gap-3 min-w-0 flex-shrink">
             <button 
-              onClick={() => setLanguage('en')} 
-              className={`rounded-full px-2.5 py-1 text-xs font-black transition-all ${language === 'en' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1.5 md:hidden shrink-0 hover:bg-white/10 rounded-lg transition-colors"
             >
-              EN
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div className="w-px h-3 bg-white/20"></div>
-            <button 
-              onClick={() => setLanguage('ar')} 
-              className={`rounded-full px-2.5 py-1 text-xs font-black transition-all ${language === 'ar' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
-            >
-              عربي
-            </button>
+            
+            <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+              <YZLOriginalLogo size={130} />
+            </div>
+            <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
+              <YZLOriginalLogo size={100} />
+            </div>
+            <div className="min-w-0 max-w-[120px] md:max-w-[200px]">
+              <h1 className="text-xs md:text-sm lg:text-base font-black tracking-tight leading-none text-white truncate">
+                {t.app_name}
+              </h1>
+              <p className="text-[7px] md:text-[8px] lg:text-[9px] uppercase tracking-widest text-white/60 mt-0.5 truncate hidden md:block">
+                {t.app_tagline}
+              </p>
+            </div>
           </div>
 
-          <Link
-            to="/profile"
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            title={t.profile || 'الملف الشخصي'}
-          >
-            <User size={20} />
-          </Link>
+          {/* الجانب الأيمن: الأزرار - بدون التفاف */}
+          <div className="flex items-center gap-0.5 md:gap-1.5 lg:gap-2 flex-shrink-0">
+            {/* تبديل اللغة */}
+            <div className="hidden sm:flex items-center rounded-full bg-white/10 border border-white/10 px-1.5 py-0.5 gap-0.5">
+              <button 
+                onClick={() => setLanguage('en')} 
+                className={`rounded-full px-2 py-0.5 text-[10px] md:text-xs font-black transition-all leading-none ${language === 'en' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
+              >
+                EN
+              </button>
+              <div className="w-px h-2.5 bg-white/20"></div>
+              <button 
+                onClick={() => setLanguage('ar')} 
+                className={`rounded-full px-2 py-0.5 text-[10px] md:text-xs font-black transition-all leading-none ${language === 'ar' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
+              >
+                عربي
+              </button>
+            </div>
 
-          <Link
-            to="/notifications"
-            className="p-2 hover:bg-white/10 rounded-full transition-colors relative"
-            title={t.notifications}
-          >
-            <Bell size={20} />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yazal-cyan rounded-full animate-pulse" />
-          </Link>
+            {/* أيقونات التصغير للشاشات الصغيرة */}
+            <div className="flex items-center gap-0.5 md:gap-1">
+              <Link
+                to="/profile"
+                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
+                title={t.profile || 'الملف الشخصي'}
+              >
+                <User size={16} className="md:w-[18px] md:h-[18px]" />
+              </Link>
 
-          <button 
-            onClick={toggleTheme}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            title={theme === 'dark' ? t.dark_mode : t.light_mode}
-          >
-            {theme === 'dark' ? <Moon size={20} className="text-yazal-cyan" /> : <Sun size={20} className="text-amber-400" />}
-          </button>
+              <Link
+                to="/notifications"
+                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors relative"
+                title={t.notifications}
+              >
+                <Bell size={16} className="md:w-[18px] md:h-[18px]" />
+                <span className="absolute top-0.5 md:top-1 right-0.5 md:right-1 w-2 h-2 bg-yazal-cyan rounded-full animate-pulse" />
+              </Link>
 
-          <button 
-            onClick={handleLogout}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            title={t.logout}
-          >
-            <LogOut size={20} />
-          </button>
-          
-          {/* زر تفعيل الإشعارات */}
-          <button
-            onClick={() => { requestNotificationPermission(); }}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            title={t.enable_notifications_header || 'تفعيل الإشعارات'}
-          >
-            <BellPlus size={20} className="text-yazal-cyan" />
-          </button>
+              <button 
+                onClick={toggleTheme}
+                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors hidden sm:block"
+                title={theme === 'dark' ? t.dark_mode : t.light_mode}
+              >
+                {theme === 'dark' ? <Moon size={16} className="md:w-[18px] md:h-[18px] text-yazal-cyan" /> : <Sun size={16} className="md:w-[18px] md:h-[18px] text-amber-400" />}
+              </button>
+
+              <button 
+                onClick={() => { requestNotificationPermission(); }}
+                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors hidden sm:block"
+                title={t.enable_notifications_header || 'تفعيل الإشعارات'}
+              >
+                <BellPlus size={16} className="md:w-[18px] md:h-[18px] text-yazal-cyan" />
+              </button>
+
+              <button 
+                onClick={handleLogout}
+                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
+                title={t.logout}
+              >
+                <LogOut size={16} className="md:w-[18px] md:h-[18px]" />
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Sidebar - القائمة الجانبية */}
+{/* Sidebar - القائمة الجانبية للموبايل (AnimatePresence) */}
       <AnimatePresence>
-        {(isSidebarOpen || window.innerWidth > 768) && (
-          <motion.aside
+        {isSidebarOpen && (
+          <motion.div
+            key="mobile-sidebar"
             initial={isRTL ? { x: '100%' } : { x: '-100%' }}
             animate={{ x: 0 }}
             exit={isRTL ? { x: '100%' } : { x: '-100%' }}
-            className={`fixed top-16 bottom-0 w-64 bg-white dark:bg-yazal-navy-light shadow-xl z-40 ${isRTL ? 'right-0' : 'left-0'} md:translate-x-0 border-x border-slate-200 dark:border-white/5 overflow-hidden flex flex-col`}
+            className="fixed inset-0 z-40 md:hidden"
           >
-            <nav className="p-4 space-y-2 flex-1 overflow-y-auto scrollbar-yazal pb-24">
-              <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-400 mb-1">
-                {t.main_navigation}
-
-              </div>
-              {menuItems.map((item) => {
-                if (item.permission && !hasPermission(item.permission)) return null;
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.path}
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="flex items-center gap-3 p-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-yazal-cyan/10 hover:text-yazal-cyan transition-all group"
-                  >
-                    <item.icon size={20} className="text-yazal-cyan group-hover:scale-110 transition-transform shrink-0" />
-                    <span className="font-bold text-sm">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-            
-            <Link to="/profile" className="absolute bottom-0 w-full p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-yazal-navy-dark/30">
-              <div className="flex items-center gap-3 p-3 bg-white dark:bg-yazal-navy-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-sm hover:bg-yazal-cyan/5 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-yazal-navy dark:bg-yazal-navy-light border-2 border-yazal-cyan overflow-hidden flex items-center justify-center shrink-0">
-                  <div className="w-full h-full bg-yazal-cyan/20 flex items-center justify-center text-yazal-cyan font-black text-sm">
-                    {(profile?.username || auth.currentUser?.email || 'Y').charAt(0).toUpperCase()}
+            {/* الخلفية المعتمة */}
+            <div className="absolute inset-0 bg-yazal-navy/60 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+            {/* الشريط الجانبي */}
+            <aside className={`absolute top-0 bottom-0 w-64 bg-white dark:bg-yazal-navy-light shadow-xl ${isRTL ? 'left-auto right-0' : 'left-0 right-auto'} pt-14 flex flex-col`}>
+              <nav className="p-4 space-y-2 flex-1 overflow-y-auto scrollbar-yazal pb-24">
+                <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-400 mb-1">
+                  {t.main_navigation}
+                </div>
+                {menuItems.map((item) => {
+                  if (item.permission && !hasPermission(item.permission)) return null;
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.path}
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-yazal-cyan/10 hover:text-yazal-cyan transition-all group"
+                    >
+                      <item.icon size={20} className="text-yazal-cyan group-hover:scale-110 transition-transform shrink-0" />
+                      <span className="font-bold text-sm">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+              <Link to="/profile" className="w-full p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-yazal-navy-dark/30">
+                <div className="flex items-center gap-3 p-3 bg-white dark:bg-yazal-navy-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+                  <div className="w-10 h-10 rounded-full bg-yazal-navy dark:bg-yazal-navy-light border-2 border-yazal-cyan overflow-hidden flex items-center justify-center shrink-0">
+                    <div className="w-full h-full bg-yazal-cyan/20 flex items-center justify-center text-yazal-cyan font-black text-sm">
+                      {(profile?.username || auth.currentUser?.email || 'Y').charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="overflow-hidden flex-1">
+                    <p className="text-xs font-black text-yazal-navy dark:text-white leading-tight truncate">
+                      {profile?.username || auth.currentUser?.email?.split('@')[0] || t.default_staff_name}
+                    </p>
+                    <p className="text-[10px] font-bold text-yazal-cyan mt-1 truncate uppercase tracking-wider">
+                      {profile?.role === 'admin' ? t.system_admin :
+                       profile?.role === 'accountant' ? (language === 'ar' ? 'محاسب' : 'Accountant') :
+                       profile?.role === 'agent' ? (language === 'ar' ? 'مندوب' : 'Agent') :
+                       profile?.role ? (language === 'ar' ? 'موظف' : 'Staff') : t.active_staff_account}
+                    </p>
                   </div>
                 </div>
-                <div className="overflow-hidden flex-1">
-                  <p className="text-xs font-black text-yazal-navy dark:text-white leading-tight truncate">
-                    {profile?.username || auth.currentUser?.email?.split('@')[0] || t.default_staff_name}
-                  </p>
-                  <p className="text-[10px] font-bold text-yazal-cyan mt-1 truncate uppercase tracking-wider">
-                    {profile?.role === 'admin' ? t.system_admin :
-                     profile?.role === 'accountant' ? (language === 'ar' ? 'محاسب' : 'Accountant') :
-                     profile?.role === 'agent' ? (language === 'ar' ? 'مندوب' : 'Agent') :
-                     profile?.role ? (language === 'ar' ? 'موظف' : 'Staff') : t.active_staff_account}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          </motion.aside>
+              </Link>
+            </aside>
+          </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Sidebar دائم الظهور على الشاشات الكبيرة (بدون AnimatePresence) */}
+      <aside className={`hidden md:flex flex-col fixed top-0 pt-14 md:pt-16 bottom-0 w-64 bg-white dark:bg-yazal-navy-light shadow-xl z-40 ${isRTL ? 'right-0' : 'left-0'} border-x border-slate-200 dark:border-white/5 overflow-hidden`}>
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto scrollbar-yazal pb-24">
+          <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-400 mb-1">
+            {t.main_navigation}
+          </div>
+          {menuItems.map((item) => {
+            if (item.permission && !hasPermission(item.permission)) return null;
+            return (
+              <Link
+                key={item.id}
+                to={item.path}
+                onClick={() => setIsSidebarOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-yazal-cyan/10 hover:text-yazal-cyan transition-all group"
+              >
+                <item.icon size={20} className="text-yazal-cyan group-hover:scale-110 transition-transform shrink-0" />
+                <span className="font-bold text-sm">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        
+        <Link to="/profile" className="w-full p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-yazal-navy-dark/30">
+          <div className="flex items-center gap-3 p-3 bg-white dark:bg-yazal-navy-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-sm hover:bg-yazal-cyan/5 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-yazal-navy dark:bg-yazal-navy-light border-2 border-yazal-cyan overflow-hidden flex items-center justify-center shrink-0">
+              <div className="w-full h-full bg-yazal-cyan/20 flex items-center justify-center text-yazal-cyan font-black text-sm">
+                {(profile?.username || auth.currentUser?.email || 'Y').charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="overflow-hidden flex-1">
+              <p className="text-xs font-black text-yazal-navy dark:text-white leading-tight truncate">
+                {profile?.username || auth.currentUser?.email?.split('@')[0] || t.default_staff_name}
+              </p>
+              <p className="text-[10px] font-bold text-yazal-cyan mt-1 truncate uppercase tracking-wider">
+                {profile?.role === 'admin' ? t.system_admin :
+                 profile?.role === 'accountant' ? (language === 'ar' ? 'محاسب' : 'Accountant') :
+                 profile?.role === 'agent' ? (language === 'ar' ? 'مندوب' : 'Agent') :
+                 profile?.role ? (language === 'ar' ? 'موظف' : 'Staff') : t.active_staff_account}
+              </p>
+            </div>
+          </div>
+        </Link>
+      </aside>
 
       {/* Main Content - المحتوى الرئيسي */}
       <main className={`pt-24 px-3 md:px-6 pb-6 transition-all duration-300 ${isRTL ? 'md:pr-72' : 'md:pl-72'}`}>

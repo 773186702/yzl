@@ -134,8 +134,28 @@ export interface Client {
 
 /**
  * العملات المدعومة في المحرك المالي لتطبيق يزل
+ * تشمل الريال اليمني القديم (YER_OLD) والجديد (YER_NEW)
  */
-export type Currency = 'YER' | 'SAR' | 'USD' | 'EGP' | 'AED' | 'EUR' | 'GBP';
+export type Currency = 'YER' | 'YER_OLD' | 'YER_NEW' | 'SAR' | 'USD' | 'EGP' | 'AED' | 'EUR' | 'GBP';
+
+/**
+ * المناطق المعتمدة للصرف (للعملات اليمنية)
+ */
+export type Region = 'sanaa' | 'aden' | 'hadramout';
+
+/**
+ * خطوة في سير عمل المهمة (Workflow Step)
+ * تسجل كل تغيير في حالة المهمة مع المستخدم والتوقيت
+ */
+export interface TaskWorkflowStep {
+  from_status: string;
+  to_status: string;
+  changed_by: string; // uid
+  changed_by_name: string; // الاسم الكامل
+  changed_by_role: string; // دور المستخدم عند التغيير
+  timestamp: any; // وقت التغيير
+  notes?: string;
+}
 
 /**
  * كتالوج الخدمات الثابتة والأسعار المعتمدة من الإدارة
@@ -172,8 +192,9 @@ export interface Task {
   client_name?: string; // اسم العميل لسرعة العرض
   service_id: string; // كود الخدمة الثابتة
   service_name?: string; // اسم الخدمة
-  created_by: string; // الموظف المنشئ
+  created_by: string; // الموظف المنشئ (uid)
   created_by_employee_name?: string; // الاسم الكامل للموظف الذي أنشأ المهمة
+  created_by_role?: string; // دور المنشئ
   assigned_to: string; // الموظف المنفذ
   status: 'new' | 'pending_approval' | 'approved' | 'processing' | 'completed' | 'cancelled'; // حالة المعاملة
   original_currency: Currency; // العملة الأصلية
@@ -189,6 +210,29 @@ export interface Task {
   created_at: any; // تاريخ إنشاء المعاملة
   updated_at?: any; // تاريخ آخر تحديث
   deadline?: any; // موعد انتهاء المعاملة
+  
+  // حقل تتبع سير العمل (Workflow Tracking)
+  workflow_history?: TaskWorkflowStep[]; // سجل كامل لتغيرات الحالة
+  
+  // حقول الاعتماد (الموافقة)
+  approved_by?: string; // uid المدير/المحاسب الذي اعتمد
+  approved_by_name?: string; // اسم المعتمد
+  approved_at?: any; // وقت الاعتماد
+  
+  // حقول التنفيذ (بدء التنفيذ)
+  processing_by?: string; // uid المندوب الذي بدأ التنفيذ
+  processing_by_name?: string; // اسم المندوب المنفذ
+  processing_at?: any; // وقت بدء التنفيذ
+  
+  // حقول الإكمال
+  completed_by?: string; // uid المندوب الذي أكمل
+  completed_by_name?: string; // اسم المندوب المكمل
+  completed_at?: any; // وقت الإكمال
+  
+  // حقول الإلغاء
+  cancelled_by?: string; // uid من ألغى
+  cancelled_by_name?: string; // اسم الملغي
+  cancelled_at?: any; // وقت الإلغاء
 }
 
 /**

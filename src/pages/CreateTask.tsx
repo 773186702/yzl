@@ -206,14 +206,15 @@ const CreateTask: React.FC = () => {
         }
       }
 
-      const newTask: Task = {
+const newTask: Task = {
         task_id: taskId,
         client_id: selectedClientId,
         client_name: selectedClientObj?.name || 'عميل مسجل',
         service_id: selectedServiceId,
         service_name: selectedServiceObj?.service_name_ar || 'خدمة سفر',
-        created_by: profile?.username || 'الموظف الحالي',
+        created_by: profile?.uid || '',
         created_by_employee_name: profile?.username || 'الموظف الحالي',
+        created_by_role: profile?.role || 'staff',
         assigned_to: profile?.username || 'الموظف المنفذ',
         status: 'pending_approval',
         original_currency: currency as any,

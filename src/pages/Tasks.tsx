@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ClipboardList, 
   Search, 
@@ -23,11 +23,14 @@ import {
   ArrowRight,
   DollarSign,
   Trash2,
-  Play
+  Play,
+  UserCheck,
+  ShieldCheck,
+  Ban
 } from 'lucide-react';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, increment } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, increment, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, showBrowserNotification } from '../lib/firebase';
-import { Task } from '../types';
+import { Task, TaskWorkflowStep } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { playStatusUpdateAlert, playNewOrderAlert } from '../lib/sound';
 import { exportArabicInvoicePDF } from '../lib/pdfExporter';
@@ -37,11 +40,46 @@ import { useAuth } from '../context/AuthContext';
 import { translations } from '../lib/translations';
 
 /**
+ * دالة مساعدة لإنشاء خطوة سير عمل جديدة
+ */
+const createWorkflowStep = (task: Task, newStatus: string, profile: any): TaskWorkflowStep => ({
+  from_status: task.status,
+  to_status: newStatus,
+  changed_by: profile?.uid || 'unknown',
+  changed_by_name: profile?.username || 'غير معروف',
+  changed_by_role: profile?.role || 'unknown',
+  timestamp: new Date().toISOString(),
+});
+
+/**
+ * دالة مساعدة لإرسال إشعار إلى Firestore (مجموعة notifications)
+ */
+const sendNotification = async (notification: {
+  title: string;
+  body: string;
+  priority: 'high' | 'medium' | 'normal';
+  type: 'task_update' | 'deadline_approaching' | 'system' | 'payment';
+  target_role?: string;
+  task_id?: string;
+}) => {
+  try {
+    const notifRef = doc(collection(db, 'notifications'));
+    await setDoc(notifRef, {
+      ...notification,
+      read: false,
+      created_at: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('Failed to send notification:', err);
+  }
+};
+
+/**
  * صفحة إدارة المعاملات والمهام (Task Ledger Workflow)
- * - تدعم التغير الديناميكي لحالة المهام (جديد -> قيد التنفيذ -> مكتمل -> ملغي)
- * - توليد فاتورة ذكية محتوية على كود QR لمسح التحقق المالي
- * - إرسال وتصدير تفاصيل المعاملة مباشرة إلى الواتساب (WhatsApp Dispatch Integration)
- * - تشغيل التنبيهات الصوتية المخصصة لتأكيد اكتمال المعاملة
+ * - نظام متقدم لتتبع سير عمل المهام مع تسجيل كامل للمستخدمين
+ * - صلاحيات صارمة: المدير/محاسب فقط يعتمد، المندوب فقط ينفذ، المنفذ فقط يكمل
+ * - منع إعادة المهام المكتملة أو تنفيذها من قبل مندوب آخر
+ * - إشعارات فورية للمستخدمين المعنيين
  */
 const Tasks: React.FC = () => {
   const { language } = useApp();
@@ -54,6 +92,7 @@ const Tasks: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [activeInvoiceTask, setActiveInvoiceTask] = useState<Task | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // جلب كافة المهام بمزامنة فورية حية
   useEffect(() => {
@@ -77,24 +116,187 @@ const Tasks: React.FC = () => {
   }, []);
 
   /**
-   * معالج تحديث حالة المهمة بـ Firestore وتفعيل الإشعارات الصوتية
+   * التحقق من صلاحية المستخدم لتغيير حالة مهمة محددة
+   */
+  const canChangeStatus = useCallback((task: Task, newStatus: string): { allowed: boolean; reason: string } => {
+    // الحالة 1: المهمة مكتملة - لا يمكن تغييرها أبداً
+    if (task.status === 'completed') {
+      return { allowed: false, reason: 'لا يمكن تغيير حالة مهمة مكتملة' };
+    }
+
+    // الحالة 2: المهمة ملغية - لا يمكن تغييرها
+    if (task.status === 'cancelled') {
+      return { allowed: false, reason: 'لا يمكن تغيير حالة مهمة ملغية' };
+    }
+
+    // الحالة 3: الموافقة (pending_approval -> approved)
+    if (newStatus === 'approved') {
+      if (task.status !== 'pending_approval') {
+        return { allowed: false, reason: 'المهمة ليست بانتظار الاعتماد' };
+      }
+      if (profile?.role !== 'admin' && profile?.role !== 'accountant') {
+        return { allowed: false, reason: 'فقط المدير أو المحاسب يمكنه اعتماد المهام' };
+      }
+      return { allowed: true, reason: '' };
+    }
+
+    // الحالة 4: بدء التنفيذ (approved -> processing)
+    if (newStatus === 'processing') {
+      if (task.status !== 'approved') {
+        return { allowed: false, reason: 'المهمة غير معتمدة بعد' };
+      }
+      // التحقق: هل بدأ مندوب آخر التنفيذ بالفعل؟
+      if (task.processing_by && task.processing_by !== profile?.uid) {
+        return { allowed: false, reason: 'هذه المهمة قيد التنفيذ من قبل مندوب آخر' };
+      }
+      if (task.processing_by === profile?.uid) {
+        return { allowed: false, reason: 'أنت بالفعل تنفذ هذه المهمة' };
+      }
+      if (profile?.role !== 'agent' && profile?.role !== 'admin') {
+        return { allowed: false, reason: 'فقط المندوب يمكنه تنفيذ المهام' };
+      }
+      if (!hasPermission('execute_task')) {
+        return { allowed: false, reason: 'لا تملك صلاحية تنفيذ المهام' };
+      }
+      return { allowed: true, reason: '' };
+    }
+
+    // الحالة 5: الإكمال (processing -> completed)
+    if (newStatus === 'completed') {
+      if (task.status !== 'processing') {
+        return { allowed: false, reason: 'المهمة ليست قيد التنفيذ' };
+      }
+      // فقط المندوب الذي بدأ التنفيذ يمكنه الإكمال
+      if (task.processing_by && task.processing_by !== profile?.uid) {
+        return { allowed: false, reason: 'فقط المندوب الذي ينفذ المهمة يمكنه إكمالها' };
+      }
+      if (!task.processing_by) {
+        return { allowed: false, reason: 'لم يتم تعيين منفذ لهذه المهمة' };
+      }
+      return { allowed: true, reason: '' };
+    }
+
+    // الحالة 6: الإلغاء (من أي حالة إلى cancelled)
+    if (newStatus === 'cancelled') {
+      if (profile?.role !== 'admin' && profile?.role !== 'accountant') {
+        return { allowed: false, reason: 'فقط المدير أو المحاسب يمكنه إلغاء المهام' };
+      }
+      return { allowed: true, reason: '' };
+    }
+
+    // الحالة 7: إرسال للاعتماد (new -> pending_approval)
+    if (newStatus === 'pending_approval') {
+      if (task.status !== 'new') {
+        return { allowed: false, reason: 'المهمة ليست جديدة' };
+      }
+      return { allowed: true, reason: '' };
+    }
+
+    return { allowed: false, reason: 'تغيير الحالة غير مسموح به' };
+  }, [profile, hasPermission]);
+
+  /**
+   * معالج تحديث حالة المهمة مع سير العمل الكامل (Workflow Tracking)
    */
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
+    setError(null);
+    
+    const task = tasks.find(t => t.task_id === taskId);
+    if (!task) {
+      setError('المهمة غير موجودة');
+      return;
+    }
+
+    // التحقق من الصلاحية
+    const { allowed, reason } = canChangeStatus(task, newStatus);
+    if (!allowed) {
+      setError(reason);
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+
+    // إنشاء خطوة سير العمل
+    const step = createWorkflowStep(task, newStatus, profile);
+    const currentHistory = task.workflow_history || [];
+    
+    // حقل التحديث العام
+    const updateFields: any = {
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+      workflow_history: [...currentHistory, step],
+    };
+
+    // إضافة حقول خاصة حسب الحالة الجديدة
+    if (newStatus === 'approved') {
+      updateFields.approved_by = profile?.uid || '';
+      updateFields.approved_by_name = profile?.username || '';
+      updateFields.approved_at = new Date().toISOString();
+    } else if (newStatus === 'processing') {
+      updateFields.processing_by = profile?.uid || '';
+      updateFields.processing_by_name = profile?.username || '';
+      updateFields.processing_at = new Date().toISOString();
+    } else if (newStatus === 'completed') {
+      updateFields.completed_by = profile?.uid || '';
+      updateFields.completed_by_name = profile?.username || '';
+      updateFields.completed_at = new Date().toISOString();
+    } else if (newStatus === 'cancelled') {
+      updateFields.cancelled_by = profile?.uid || '';
+      updateFields.cancelled_by_name = profile?.username || '';
+      updateFields.cancelled_at = new Date().toISOString();
+    }
+
     try {
-      await updateDoc(doc(db, 'tasks', taskId), {
-        status: newStatus
-      });
+      await updateDoc(doc(db, 'tasks', taskId), updateFields);
 
-      // تشغيل التنبيه الصوتي المحلي للتحويل
+      // تشغيل التنبيه الصوتي
       playStatusUpdateAlert();
+      
+      // عرض إشعار متصفح
+      const statusLabels: Record<string, string> = {
+        approved: 'معتمد',
+        processing: 'قيد التنفيذ',
+        completed: 'مكتمل',
+        cancelled: 'ملغي',
+        pending_approval: 'بانتظار الاعتماد',
+      };
+      
       showBrowserNotification('تحديث حالة المهمة', {
-        body: `تم تغيير حالة المهمة #${taskId} إلى ${newStatus}`
+        body: `تم تغيير حالة المهمة #${taskId} إلى ${statusLabels[newStatus] || newStatus}`
       });
 
-      await logActivity('تحديث حالة معاملة', `تم تغيير حالة المهمة (${taskId}) إلى: ${newStatus}`);
+      // إرسال إشعارات إلى Firestore للمستخدمين المعنيين
+      if (newStatus === 'pending_approval') {
+        await sendNotification({
+          title: 'مهمة جديدة بانتظار الاعتماد',
+          body: `المهمة #${taskId} - ${task.service_name || ''} بانتظار اعتمادك`,
+          priority: 'high',
+          type: 'task_update',
+          task_id: taskId,
+        });
+      } else if (newStatus === 'approved') {
+        await sendNotification({
+          title: 'مهمة معتمدة وجاهزة للتنفيذ',
+          body: `المهمة #${taskId} - ${task.service_name || ''} تم اعتمادها، يمكنك البدء بالتنفيذ`,
+          priority: 'high',
+          type: 'task_update',
+          task_id: taskId,
+        });
+      } else if (newStatus === 'completed') {
+        await sendNotification({
+          title: 'تم إكمال المهمة 🎉',
+          body: `المهمة #${taskId} - ${task.service_name || ''} تم إكمالها بنجاح بواسطة ${profile?.username || ''}`,
+          priority: 'high',
+          type: 'task_update',
+          task_id: taskId,
+        });
+      }
+
+      await logActivity('تحديث حالة معاملة', 
+        `تم تغيير حالة المهمة (${taskId}) من ${task.status} إلى ${newStatus} بواسطة ${profile?.username || ''}`
+      );
     } catch (err) {
       console.error('Error updating task status:', err);
-      alert('حدث خطأ أثناء تحديث حالة المهمة.');
+      setError('حدث خطأ أثناء تحديث حالة المهمة.');
     }
   };
 
@@ -203,7 +405,7 @@ const Tasks: React.FC = () => {
         </a>
       </div>
 
-      {/* أدوات البحث والتصفية */}
+{/* أدوات البحث والتصفية */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 bg-white dark:bg-yazal-navy-light p-4 rounded-2xl border border-slate-100 dark:border-white/5 flex items-center gap-4 shadow-sm">
           <Search className="text-slate-400 shrink-0" size={20} />
@@ -239,6 +441,14 @@ const Tasks: React.FC = () => {
         </div>
       </div>
 
+      {/* رسالة الخطأ */}
+      {error && (
+        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl text-xs font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <Ban size={18} className="shrink-0" />
+          {error}
+        </div>
+      )}
+
       {/* جدول/شبكة عرض المعاملات */}
       <div className="bg-white dark:bg-yazal-navy-light rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm overflow-hidden">
         {loading ? (
@@ -273,7 +483,7 @@ const Tasks: React.FC = () => {
                      task.status === 'pending_approval' ? <AlertCircle size={24} /> : <XCircle size={24} />}
                   </div>
 
-                  <div className="space-y-1">
+<div className="space-y-1">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-black text-lg text-yazal-navy dark:text-white uppercase tracking-tight">
                         {task.service_name || task.service_id}
@@ -295,6 +505,14 @@ const Tasks: React.FC = () => {
                     <div className="flex items-center gap-4 text-xs font-bold text-slate-400 flex-wrap">
                       <span>العميل: <strong className="text-yazal-navy dark:text-slate-200">{task.client_name || task.client_id}</strong></span>
                       <span>طريقة الدفع: <strong className="text-yazal-cyan">{task.payment_method || 'نقد كاش'}</strong></span>
+                    </div>
+                    
+                    {/* معلومات تتبع سير العمل */}
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 flex-wrap mt-1">
+                      <span>المنشئ: <strong className="text-yazal-navy dark:text-slate-200">{task.created_by_employee_name || task.created_by || '-'}</strong></span>
+                      {task.approved_by_name && <span>المعتمد: <strong className="text-emerald-600">{task.approved_by_name}</strong></span>}
+                      {task.processing_by_name && <span>المنفذ: <strong className="text-yazal-cyan">{task.processing_by_name}</strong></span>}
+                      {task.completed_by_name && <span>المكمل: <strong className="text-emerald-600">{task.completed_by_name}</strong></span>}
                     </div>
                   </div>
                 </div>
