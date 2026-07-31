@@ -332,7 +332,7 @@ const Login: React.FC = () => {
       >
         <div className="text-center mb-10">
           <div className="flex justify-center mb-6">
-            <YZLOriginalLogo size={180} />
+<YZLOriginalLogo size={260} />
           </div>
           <h1 className="text-3xl font-black text-yazal-navy dark:text-white tracking-tight uppercase">
             {t.app_name}

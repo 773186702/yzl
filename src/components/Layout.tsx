@@ -27,7 +27,13 @@ import {
   FileText,
   Database,
   User,
-  Scale
+  Scale,
+  BookOpen,
+  BookText,
+  TrendingUp,
+  History,
+  UserMinus,
+  Columns
 } from 'lucide-react';
 import { requestNotificationPermission } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -64,6 +70,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'payment-methods', label: t.payment_methods, icon: CreditCard, path: '/payment-methods', permission: 'admin' },
     { id: 'reports', label: t.reports, icon: FileText, path: '/reports', permission: 'view_ledger' },
     { id: 'monthly-reconciliation', label: t.monthly_reconciliation || 'المطابقة المالية', icon: Scale, path: '/monthly-reconciliation', permission: 'view_financial_reports' },
+    // 📋 صفحات المحاسبة الجديدة
+    { id: 'account-chart', label: (t as any).account_chart || 'دليل الحسابات', icon: BookOpen, path: '/account-chart', permission: 'manage_account_chart' },
+    { id: 'journal-entries', label: (t as any).journal_entries || 'دفتر اليومية', icon: BookText, path: '/journal-entries', permission: 'view_journal_entries' },
+    { id: 'balance-sheet', label: (t as any).balance_sheet || 'الميزانية العمومية', icon: TrendingUp, path: '/balance-sheet', permission: 'view_balance_sheet' },
+    { id: 'income-statement', label: (t as any).income_statement || 'قائمة الدخل', icon: DollarSign, path: '/income-statement', permission: 'view_income_statement' },
+    { id: 'audit-trail', label: (t as any).audit_trail || 'سجل التدقيق', icon: History, path: '/audit-trail', permission: 'view_audit_trail' },
+    { id: 'employee-deductions', label: (t as any).employee_deductions || 'خصومات الموظفين', icon: UserMinus, path: '/employee-deductions', permission: 'deduct_employee' },
+    { id: 'task-management', label: (t as any).task_management || 'إدارة المهام', icon: Columns, path: '/task-management', permission: 'manage_task_board' },
     { id: 'admin', label: t.admin, icon: ShieldCheck, path: '/admin', permission: 'admin' },
     { id: 'system-reset', label: t.system_reset || 'تهيئة النظام', icon: Database, path: '/system-reset', permission: 'admin' },
     { id: 'settings', label: t.settings, icon: Sliders, path: '/settings', permission: null },
@@ -85,7 +99,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </button>
         
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <YZLOriginalLogo size={90} />
+<YZLOriginalLogo size={150} />
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight leading-none text-white truncate">
               {t.app_name}

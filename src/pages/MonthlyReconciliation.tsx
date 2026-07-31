@@ -3,7 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
+import React, { useState, useEffect } from 'react';
+import {
+  Scale,
+  FileText,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Receipt,
+  CalendarDays,
+  AlertCircle,
+  CheckCircle,
+  FileDown,
+  BarChart3,
+  Filter
+} from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +27,7 @@ import { translations } from '../lib/translations';
 import { motion } from 'motion/react';
 import { logActivity } from '../lib/audit';
 import { exportReportPDF } from '../lib/pdfExporter';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 interface MonthlyData {
   totalIncome: number;
@@ -49,6 +66,14 @@ const MonthlyReconciliation: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<MonthlyData | null>(null);
 
+  // Dynamic filter states
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('all');
+  const [selectedService, setSelectedService] = useState<string>('all');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
+  const [dynamicCurrencies, setDynamicCurrencies] = useState<{ code: string; name: string }[]>([]);
+  const [dynamicServices, setDynamicServices] = useState<{ id: string; name: string }[]>([]);
+  const [dynamicPaymentMethods, setDynamicPaymentMethods] = useState<{ id: string; name: string }[]>([]);
+
   const months = [
     { value: 1, label: 'يناير' },
     { value: 2, label: 'فبراير' },
@@ -65,6 +90,28 @@ const MonthlyReconciliation: React.FC = () => {
   ];
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  // Fetch dynamic data from Firestore
+  useEffect(() => {
+    const fetchDynamicData = async () => {
+      try {
+        const currenciesSnap = await getDocs(collection(db, 'currencies'));
+        const currenciesList = currenciesSnap.docs.map(d => ({ code: d.data().code, name: d.data().name }));
+        if (currenciesList.length > 0) setDynamicCurrencies(currenciesList);
+
+        const servicesSnap = await getDocs(collection(db, 'services'));
+        const servicesList = servicesSnap.docs.map(d => ({ id: d.id, name: d.data().service_name_ar || d.data().service_name_en || d.id }));
+        if (servicesList.length > 0) setDynamicServices(servicesList);
+
+        const paymentMethodsSnap = await getDocs(collection(db, 'payment_methods'));
+        const methodsList = paymentMethodsSnap.docs.map(d => ({ id: d.id, name: d.data().name }));
+        if (methodsList.length > 0) setDynamicPaymentMethods(methodsList);
+      } catch (err) {
+        console.warn('Error fetching dynamic data:', err);
+      }
+    };
+    fetchDynamicData();
+  }, []);
 
   const parseDate = (val: any): Date | null => {
     if (!val) return null;
@@ -87,42 +134,54 @@ const MonthlyReconciliation: React.FC = () => {
   const generateReconciliation = async () => {
     setLoading(true);
     try {
-      // جلب المهام
       const tasksSnap = await getDocs(collection(db, 'tasks'));
       const allTasks = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
-      const monthTasks = allTasks.filter((t: any) => isInMonth(t.created_at || t.date));
+      let monthTasks = allTasks.filter((t: any) => isInMonth(t.created_at || t.date));
 
-      // جلب المصروفات
       const expensesSnap = await getDocs(query(collection(db, 'expenses'), orderBy('date', 'desc')));
       const allExpenses = expensesSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
-      const monthExpenses = allExpenses.filter((e: any) => isInMonth(e.date));
+      let monthExpenses = allExpenses.filter((e: any) => isInMonth(e.date));
 
-      // جلب العملاء
+      // Apply dynamic filters
+      if (selectedCurrency !== 'all') {
+        monthTasks = monthTasks.filter((t: any) => (t.original_currency || 'YER') === selectedCurrency);
+        monthExpenses = monthExpenses.filter((e: any) => (e.currency || 'YER') === selectedCurrency);
+      }
+      if (selectedService !== 'all') {
+        monthTasks = monthTasks.filter((t: any) => (t.service_id || '') === selectedService);
+      }
+      if (selectedPaymentMethod !== 'all') {
+        monthTasks = monthTasks.filter((t: any) => (t.payment_method || '') === selectedPaymentMethod);
+      }
+
+      // Get clients for count
       const clientsSnap = await getDocs(collection(db, 'clients'));
-      const allClients = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const totalClients = clientsSnap.size;
 
-      // الحسابات
-      const resultTotalIncome = monthTasks.reduce((sum: number, t: any) => sum + Number(t.paid_amount || 0), 0);
-      const resultTotalExpenses = monthExpenses.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0);
-      const resultTotalRemainingDebts = monthTasks.reduce((sum: number, t: any) => sum + Number(t.remaining_amount || 0), 0);
-      const resultNetProfitLoss = resultTotalIncome - resultTotalExpenses;
+      const totalIncome = monthTasks.reduce((sum: number, t: any) => sum + Number(t.paid_amount || 0), 0);
+      const totalExpensesValue = monthExpenses.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0);
+      const totalRemainingDebts = monthTasks.reduce((sum: number, t: any) => sum + Number(t.remaining_amount || 0), 0);
+      const netProfitLoss = totalIncome - totalExpensesValue;
 
       setData({
-        totalIncome: resultTotalIncome,
-        totalExpenses: resultTotalExpenses,
-        totalRemainingDebts: resultTotalRemainingDebts,
-        netProfitLoss: resultNetProfitLoss,
+        totalIncome,
+        totalExpenses: totalExpensesValue,
+        totalRemainingDebts,
+        netProfitLoss,
         tasksCount: monthTasks.length,
         expensesCount: monthExpenses.length,
-        clientsCount: allClients.length,
+        clientsCount: totalClients,
         tasks: monthTasks,
         expenses: monthExpenses,
       });
 
-      await logActivity('مطابقة مالية', `تم إجراء المطابقة المالية الشهرية لـ ${selectedMonth}/${selectedYear}`);
+      await logActivity(
+        'تقرير مطابقة مالية',
+        `تم إنشاء تقرير المطابقة المالية لشهر ${selectedMonth} سنة ${selectedYear}`
+      );
     } catch (err) {
       console.error('Error generating reconciliation:', err);
-      alert('حدث خطأ أثناء إنشاء المطابقة المالية');
+      alert('حدث خطأ أثناء إنشاء التقرير');
     } finally {
       setLoading(false);
     }
@@ -131,33 +190,19 @@ const MonthlyReconciliation: React.FC = () => {
   const exportReconciliationPDF = async () => {
     if (!data) return;
     const monthLabel = months.find(m => m.value === selectedMonth)?.label || selectedMonth;
-    const period = `${monthLabel} ${selectedYear}`;
-
     await exportReportPDF({
-      title: `تقرير المطابقة المالية - ${period}`,
-      period,
+      title: `تقرير المطابقة المالية - ${monthLabel} ${selectedYear}`,
+      period: `${monthLabel} ${selectedYear}`,
       summaryCards: [
-        { label: 'إجمالي الإيرادات', value: formatCurrency(data.totalIncome), color: '#16a34a' },
-        { label: 'إجمالي المصروفات', value: formatCurrency(data.totalExpenses), color: '#dc2626' },
-        { label: 'صافي الربح/الخسارة', value: formatCurrency(data.netProfitLoss), color: data.netProfitLoss >= 0 ? '#16a34a' : '#dc2626' },
-        { label: 'الديون المتبقية', value: formatCurrency(data.totalRemainingDebts), color: '#d97706' },
-        { label: 'عدد المهام', value: String(data.tasksCount), color: '#0f2b48' },
-        { label: 'عدد المصروفات', value: String(data.expensesCount), color: '#0f2b48' },
+        { label: t.total_income || 'إجمالي الإيرادات', value: formatCurrency(data.totalIncome), color: '#16a34a' },
+        { label: t.total_expenses || 'إجمالي المصروفات', value: formatCurrency(data.totalExpenses), color: '#dc2626' },
+        { label: t.net_profit_loss || 'صافي الربح/الخسارة', value: formatCurrency(data.netProfitLoss), color: data.netProfitLoss >= 0 ? '#2563eb' : '#d97706' },
+        { label: t.total_remaining_debts || 'الديون المتبقية', value: formatCurrency(data.totalRemainingDebts), color: '#d97706' },
       ],
       headers: ['النوع', 'التفاصيل', 'التاريخ', 'المبلغ'],
       rows: [
-        ...data.tasks.map((t: any) => [
-          'مهمة',
-          `${t.service_name || t.service_id || '-'} - ${t.client_name || t.client_id || '-'}`,
-          parseDate(t.created_at || t.date)?.toLocaleDateString('ar-EG') || '-',
-          formatCurrency(Number(t.total_price || 0))
-        ]),
-        ...data.expenses.map((e: any) => [
-          'مصروف',
-          e.title || e.description || '-',
-          parseDate(e.date)?.toLocaleDateString('ar-EG') || '-',
-          formatCurrency(Number(e.amount || 0))
-        ])
+        ...data.tasks.map((t: any) => ['مهمة', `${t.service_name || t.service_id || '-'} - ${t.client_name || t.client_id || '-'}`, parseDate(t.created_at || t.date)?.toLocaleDateString('ar-EG') || '-', formatCurrency(Number(t.total_price || 0))]),
+        ...data.expenses.map((e: any) => ['مصروف', e.title || e.description || '-', parseDate(e.date)?.toLocaleDateString('ar-EG') || '-', formatCurrency(Number(e.amount || 0))])
       ]
     });
   };
@@ -243,6 +288,56 @@ const MonthlyReconciliation: React.FC = () => {
             </select>
           </div>
         </div>
+
+        {/* Dynamic Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">
+              {t.currency || 'العملة'}
+            </label>
+            <select
+              value={selectedCurrency}
+              onChange={e => setSelectedCurrency(e.target.value)}
+              className="w-full p-4 bg-slate-50 dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 ring-yazal-cyan"
+            >
+              <option value="all">{t.all || 'الكل'}</option>
+              {dynamicCurrencies.map(c => (
+                <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">
+              {t.service || 'الخدمة'}
+            </label>
+            <select
+              value={selectedService}
+              onChange={e => setSelectedService(e.target.value)}
+              className="w-full p-4 bg-slate-50 dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 ring-yazal-cyan"
+            >
+              <option value="all">{t.all || 'الكل'}</option>
+              {dynamicServices.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">
+              {t.payment_method || 'طريقة الدفع'}
+            </label>
+            <select
+              value={selectedPaymentMethod}
+              onChange={e => setSelectedPaymentMethod(e.target.value)}
+              className="w-full p-4 bg-slate-50 dark:bg-yazal-navy-dark border border-slate-200 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 ring-yazal-cyan"
+            >
+              <option value="all">{t.all || 'الكل'}</option>
+              {dynamicPaymentMethods.map(pm => (
+                <option key={pm.id} value={pm.name}>{pm.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <button
           onClick={generateReconciliation}
           disabled={loading}
@@ -426,4 +521,3 @@ const MonthlyReconciliation: React.FC = () => {
 };
 
 export default MonthlyReconciliation;
-

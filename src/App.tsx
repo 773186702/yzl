@@ -26,6 +26,13 @@ import SystemReset from './pages/SystemReset';
 import ChangePassword from './pages/ChangePassword';
 import Profile from './pages/Profile';
 import MonthlyReconciliation from './pages/MonthlyReconciliation';
+import AccountChart from './pages/AccountChart';
+import JournalEntries from './pages/JournalEntries';
+import BalanceSheet from './pages/BalanceSheet';
+import IncomeStatement from './pages/IncomeStatement';
+import AuditTrail from './pages/AuditTrail';
+import EmployeeDeductions from './pages/EmployeeDeductions';
+import TaskManagement from './pages/TaskManagement';
 
 /**
  * مكون حماية الملاحة المسارات (Protected Route Component)
@@ -160,6 +167,48 @@ export default function App() {
             <Route path="/monthly-reconciliation" element={
               <ProtectedRoute>
                 <MonthlyReconciliation />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/account-chart" element={
+              <ProtectedRoute>
+                <AccountChart />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/journal-entries" element={
+              <ProtectedRoute>
+                <JournalEntries />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/balance-sheet" element={
+              <ProtectedRoute>
+                <BalanceSheet />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/income-statement" element={
+              <ProtectedRoute>
+                <IncomeStatement />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/audit-trail" element={
+              <ProtectedRoute>
+                <AuditTrail />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/employee-deductions" element={
+              <ProtectedRoute>
+                <EmployeeDeductions />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/task-management" element={
+              <ProtectedRoute>
+                <TaskManagement />
               </ProtectedRoute>
             } />
 
