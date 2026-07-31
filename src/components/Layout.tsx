@@ -42,7 +42,7 @@ import { translations } from '../lib/translations';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import YZLOriginalLogo from './YZLOriginalLogo';
-import newLogoSrc from '../assets/images/yazal_logo1784807246125.png';
+import newLogoSrc from '../assets/images/yazal_logo_new_trim.png';
 
 import DeadlineMonitor from './DeadlineMonitor';
 
@@ -103,10 +103,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
             
             <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-              <YZLOriginalLogo src={newLogoSrc} size={145} maxHeight={38} />
+              <YZLOriginalLogo src={newLogoSrc} size={240} maxHeight={56} />
             </div>
             <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
-              <YZLOriginalLogo src={newLogoSrc} size={115} maxHeight={32} />
+              <YZLOriginalLogo src={newLogoSrc} size={190} maxHeight={50} />
             </div>
             <div className="hidden md:block min-w-0 max-w-[160px]">
               <h1 className="text-xs md:text-sm lg:text-base font-black tracking-tight leading-none text-white truncate">
@@ -121,7 +121,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* الجانب الأيمن: الأزرار - بدون التفاف */}
           <div className="flex items-center gap-0.5 md:gap-1.5 lg:gap-2 flex-shrink-0">
             {/* تبديل اللغة */}
-            <div className="hidden sm:flex items-center rounded-full bg-white/10 border border-white/10 px-1.5 py-0.5 gap-0.5">
+            <div className="flex items-center rounded-full bg-white/10 border border-white/10 px-1.5 py-0.5 gap-0.5">
               <button 
                 onClick={() => setLanguage('en')} 
                 className={`rounded-full px-2 py-0.5 text-[10px] md:text-xs font-black transition-all leading-none ${language === 'en' ? 'bg-white/15 text-yazal-cyan shadow-sm' : 'text-white/70 hover:text-white'}`}
@@ -158,7 +158,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               <button 
                 onClick={toggleTheme}
-                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors hidden sm:block"
+                className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                 title={theme === 'dark' ? t.dark_mode : t.light_mode}
               >
                 {theme === 'dark' ? <Moon size={18} className="md:w-[20px] md:h-[20px] text-yazal-cyan" /> : <Sun size={18} className="md:w-[20px] md:h-[20px] text-amber-400" />}
