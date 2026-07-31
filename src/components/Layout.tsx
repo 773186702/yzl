@@ -42,6 +42,7 @@ import { translations } from '../lib/translations';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import YZLOriginalLogo from './YZLOriginalLogo';
+import newLogoSrc from '../assets/images/yazal_logo1784807246125.png';
 
 import DeadlineMonitor from './DeadlineMonitor';
 
@@ -89,10 +90,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-yazal-bg dark:bg-yazal-navy-dark text-yazal-navy dark:text-white transition-colors duration-300">
-      {/* Header - شريط الرأس - مُحسّن لمنع الالتفاف والغطاء */}
+{/* Header - شريط الرأس - مُحسّن ومتوازن للمحتوى */}
       <header className="fixed top-0 inset-x-0 z-50 bg-yazal-navy text-white shadow-lg border-b border-white/5">
         <div className="flex items-center justify-between h-14 md:h-16 px-2 md:px-4 lg:px-6 max-w-full">
-          {/* الجانب الأيسر: زر القائمة + اللوجو */}
+          {/* الجانب الأيسر: زر القائمة + اللوجو + اسم التطبيق */}
           <div className="flex items-center gap-1.5 md:gap-3 min-w-0 flex-shrink">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -102,16 +103,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
             
             <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-              <YZLOriginalLogo size={130} />
+              <YZLOriginalLogo src={newLogoSrc} size={145} maxHeight={38} />
             </div>
             <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
-              <YZLOriginalLogo size={100} />
+              <YZLOriginalLogo src={newLogoSrc} size={115} maxHeight={32} />
             </div>
-            <div className="min-w-0 max-w-[120px] md:max-w-[200px]">
+            <div className="hidden md:block min-w-0 max-w-[160px]">
               <h1 className="text-xs md:text-sm lg:text-base font-black tracking-tight leading-none text-white truncate">
                 {t.app_name}
               </h1>
-              <p className="text-[7px] md:text-[8px] lg:text-[9px] uppercase tracking-widest text-white/60 mt-0.5 truncate hidden md:block">
+              <p className="text-[7px] md:text-[8px] lg:text-[9px] uppercase tracking-widest text-white/60 mt-0.5 truncate">
                 {t.app_tagline}
               </p>
             </div>
@@ -136,14 +137,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </button>
             </div>
 
-            {/* أيقونات التصغير للشاشات الصغيرة */}
+            {/* أيقونات متناسبة مع الهيدر */}
             <div className="flex items-center gap-0.5 md:gap-1">
               <Link
                 to="/profile"
                 className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                 title={t.profile || 'الملف الشخصي'}
               >
-                <User size={16} className="md:w-[18px] md:h-[18px]" />
+                <User size={18} className="md:w-[20px] md:h-[20px]" />
               </Link>
 
               <Link
@@ -151,7 +152,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors relative"
                 title={t.notifications}
               >
-                <Bell size={16} className="md:w-[18px] md:h-[18px]" />
+                <Bell size={18} className="md:w-[20px] md:h-[20px]" />
                 <span className="absolute top-0.5 md:top-1 right-0.5 md:right-1 w-2 h-2 bg-yazal-cyan rounded-full animate-pulse" />
               </Link>
 
@@ -160,7 +161,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors hidden sm:block"
                 title={theme === 'dark' ? t.dark_mode : t.light_mode}
               >
-                {theme === 'dark' ? <Moon size={16} className="md:w-[18px] md:h-[18px] text-yazal-cyan" /> : <Sun size={16} className="md:w-[18px] md:h-[18px] text-amber-400" />}
+                {theme === 'dark' ? <Moon size={18} className="md:w-[20px] md:h-[20px] text-yazal-cyan" /> : <Sun size={18} className="md:w-[20px] md:h-[20px] text-amber-400" />}
               </button>
 
               <button 
@@ -168,7 +169,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors hidden sm:block"
                 title={t.enable_notifications_header || 'تفعيل الإشعارات'}
               >
-                <BellPlus size={16} className="md:w-[18px] md:h-[18px] text-yazal-cyan" />
+                <BellPlus size={18} className="md:w-[20px] md:h-[20px] text-yazal-cyan" />
               </button>
 
               <button 
@@ -176,7 +177,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                 title={t.logout}
               >
-                <LogOut size={16} className="md:w-[18px] md:h-[18px]" />
+                <LogOut size={18} className="md:w-[20px] md:h-[20px]" />
               </button>
             </div>
           </div>
@@ -285,8 +286,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Link>
       </aside>
 
-      {/* Main Content - المحتوى الرئيسي */}
-      <main className={`pt-24 px-3 md:px-6 pb-6 transition-all duration-300 ${isRTL ? 'md:pr-72' : 'md:pl-72'}`}>
+      {/* Main Content - المحتوى الرئيسي مع تباعد متوازن */}
+      <main className={`pt-20 md:pt-24 px-3 md:px-6 pb-6 transition-all duration-300 ${isRTL ? 'md:pr-72' : 'md:pl-72'}`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
